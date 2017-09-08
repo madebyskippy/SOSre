@@ -8,6 +8,9 @@ public class BoardSpace : MonoBehaviour {
     public int colNum, rowNum;
     public bool isCenterSpace;
 
+    public List<Tile> tileStack;
+    public int provisionalTileCount;
+
 	// Use this for initialization
 	void Start () {
 		
@@ -24,5 +27,33 @@ public class BoardSpace : MonoBehaviour {
         rowNum = row;
     }
 
+    public void AddTile(Tile tileToAdd, bool positionTile){
+		if (!isCenterSpace)
+		{
+			if (tileStack.Count > 0)
+			{
+				tileStack[tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("Default");
+
+			}
+			if (positionTile)
+			{
+				tileToAdd.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
+			}
+
+			provisionalTileCount += 1;
+			tileStack.Add(tileToAdd);
+			tileToAdd.gameObject.layer = LayerMask.NameToLayer("TopTiles");
+		}
+		else
+		{
+		/*	//color = tileToAdd.color;
+			GameObject.FindWithTag("TurnManager").GetComponent<TurnManager>().scoringMode = true;
+			GetComponent<MeshRenderer>().material = boardManager.mats[tileToAdd.color];
+			//Destroy (tileToAdd.gameObject);
+			//juicy.TileSinkAnimation(tileToAdd.gameObject, transform.gameObject);
+			boardManager.centerSpaceChanged = true;
+            */
+		}
+    }
 
 }

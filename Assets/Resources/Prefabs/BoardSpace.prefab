@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 33974053144630754}
   - component: {fileID: 65614200319590692}
   - component: {fileID: 23725353107472782}
+  - component: {fileID: 114106599261333506}
   m_Layer: 0
   m_Name: BoardSpace
   m_TagString: Untagged
@@ -93,3 +94,20 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &114106599261333506
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1534684331011196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d436b615c0bf54ccf8a5b5cd39d4ccbc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  color: 0
+  colNum: 0
+  rowNum: 0
+  isCenterSpace: 0
+  tileStack: []
+  provisionalTileCount: 0

@@ -10,11 +10,42 @@ public class BoardManager {
 
     public BoardSpace[,] board;
     public List<BoardSpace> centerSpaces;
+    public List<Tile> tileBag;
 
-    public void GenerateBoard(int c, int r){
+	public void InitializeBoard()
+    {
+        CreateBoard();
+        CreateTileBag();
+
+        if(Services.BoardData.randomTiles){
+			for (int i = 0; i < numCols; i++)
+			{
+				for (int j = 0; j < numRows; j++)
+				{
+					if ((!IsCentered(i, numCols) && IsEdge(j, numRows)) || (!IsCentered(j, numRows) && IsEdge(i, numCols)))
+					{
+						Tile firstTileToPlace;
+						Tile secondTileToPlace;
+						firstTileToPlace = DrawTile();
+						secondTileToPlace = DrawTile();
+						board[i, j].AddTile(firstTileToPlace, true);
+						board[i, j].AddTile(secondTileToPlace, true);
+					}
+				}
+			}
+
+        } else{
+
+
+        }
+
+	}
+
+    private void CreateBoard(){
         centerSpaces = new List<BoardSpace>();
-        numCols = c;
-        numRows = r;
+
+        numCols = Services.BoardData.numCols;
+        numRows = Services.BoardData.numRows;
 		board = new BoardSpace[numCols, numRows];
 		for (int i = 0; i < numCols; i++)
 		{
@@ -36,6 +67,9 @@ public class BoardManager {
 				CreateBoardSpace(i, j, spaceColor);
 			}
 		}
+
+
+
     }
 
 	public bool IsCentered(int index, int sideLength)
@@ -44,7 +78,14 @@ public class BoardManager {
 		return centered;
 	}
 
-    private void CreateBoardSpace(int colNum, int rowNum, int color){
+	private bool IsEdge(int index, int sideLength)
+	{
+		bool edge = (index == 0) || (index == sideLength - 1);
+		return edge;
+	}
+
+
+	private void CreateBoardSpace(int colNum, int rowNum, int color){
         Vector3 location = new Vector3(colNum - numCols / 2 + 0.5f, 0, rowNum - numRows / 2 + 0.5f);
         GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.LookRotation(Vector3.down)) as GameObject;
         boardSpace.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[color];
@@ -60,4 +101,52 @@ public class BoardManager {
 		}
 		board[colNum, rowNum] = boardSpace.GetComponent<BoardSpace>();
     }
+
+    private void CreateTile(int materialIndex){
+		//GameObject tile;
+		Vector3 offscreen = new Vector3(-1000, -1000, -1000);
+        GameObject tile = Object.Instantiate(Services.Prefabs.Tile, offscreen, Quaternion.identity) as GameObject;
+        tile.GetComponent<MeshRenderer>().material = Services.Materials.TileMats[materialIndex];
+        tile.GetComponent<Tile>().SetTile(materialIndex);
+		tileBag.Add(tile.GetComponent<Tile>());
+    }
+
+	private void CreateTileBag()
+	{
+		tileBag = new List<Tile>();
+        for (int i = 0; i < 4; ++i){
+            CreateTilesOfAColor(i);
+        }
+	}
+
+    private void CreateTilesOfAColor(int materialIndex){
+        for (int i = 0; i < Services.BoardData.initialNumberOfEachTileColor[materialIndex]; ++i)
+		{
+			CreateTile(materialIndex);
+		}
+    }
+
+	public Tile DrawTile()
+	{
+		//prevent out of range exception
+		if (tileBag.Count > 0)
+		{
+			int numTilesInBag = tileBag.Count;
+			Tile drawnTile;
+			int tileIndexToDraw;
+            if (Services.BoardData.randomTiles)
+			{
+				tileIndexToDraw = Random.Range(0, numTilesInBag);
+			}
+			else
+			{
+				tileIndexToDraw = 0;
+			}
+			drawnTile = tileBag[tileIndexToDraw];
+			tileBag.Remove(drawnTile);
+			return drawnTile;
+		}
+		return null;
+	}
+
 }

@@ -10,10 +10,10 @@ public class Tile : MonoBehaviour {
 
     void Start(){
         //render = 
-        SetColor(3);
+      //  SetColor(3);
     }
 
-    public void SetColor(int c){
+    public void SetTile(int c){
         color = c;
         GetComponent<MeshRenderer>().material = Services.Materials.TileMats[c];
     }
