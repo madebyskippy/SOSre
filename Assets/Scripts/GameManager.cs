@@ -31,8 +31,12 @@ public class GameManager : MonoBehaviour {
 		Services.EventManager = new EventManager();
 		Services.TaskManager = new TaskManager();
 		Services.Prefabs = Resources.Load<PrefabDB>("Prefabs/Prefabs");
+        Services.Materials = Resources.Load<MaterialDB>("Art/Materials");
 		Services.SceneStackManager = new SceneStackManager<TransitionData>(sceneRoot, Services.Prefabs.Scenes);
 		Services.InputManager = new InputManager();
+
+        Services.BoardData = new BoardData();
+        Services.BoardManager = new BoardManager();
 	}
 
 	void Reset(Reset e)

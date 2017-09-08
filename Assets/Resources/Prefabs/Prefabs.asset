@@ -14,3 +14,5 @@ MonoBehaviour:
   scenes:
   - {fileID: 1478640791430904, guid: 6ed6ea1fc67f9442694d5393a0c81b3b, type: 2}
   - {fileID: 1478640791430904, guid: fcaf8a4f7305e4c7a96176d125b2bfd8, type: 2}
+  tile: {fileID: 1474627947128040, guid: 7349c7c3558c740308ef2a4fe04f7f72, type: 2}
+  boardspace: {fileID: 1534684331011196, guid: 81e01469b6177480995b9e7ff451e147, type: 2}

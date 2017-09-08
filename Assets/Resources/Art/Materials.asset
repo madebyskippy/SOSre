@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 741c168817307488a9ba4de48116329f, type: 3}
+  m_Name: Materials
+  m_EditorClassIdentifier: 
+  tileMats:
+  - {fileID: 2100000, guid: 9d024afc70c39421885ba695f94da78c, type: 2}
+  - {fileID: 2100000, guid: 9e8a3f6de08de42fcbb02cbbec5b0ee2, type: 2}
+  - {fileID: 2100000, guid: 18c1923ae1da545bd9e41606f1611035, type: 2}
+  - {fileID: 2100000, guid: c214a43cf71624649b2d34cc786b9ead, type: 2}
+  boardMats:
+  - {fileID: 2100000, guid: b8afd73c9e867ee4e8e0b5c59d96eb91, type: 2}
+  - {fileID: 2100000, guid: 756f9047843b642a09f47b5a60ef45ad, type: 2}
+  - {fileID: 2100000, guid: fc6432564e9c3444a9c833304dd98ecf, type: 2}
