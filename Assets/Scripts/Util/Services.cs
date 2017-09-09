@@ -14,5 +14,6 @@ public static class Services {
 
 	public static BoardData BoardData { get; set; }
     public static BoardManager BoardManager { get; set; }
+    public static TurnManager TurnManager { get; set; }
 
 }

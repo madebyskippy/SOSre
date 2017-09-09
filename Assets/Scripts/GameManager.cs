@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour {
 
         Services.BoardData = new BoardData();
         Services.BoardManager = new BoardManager();
+        Services.TurnManager = new TurnManager();
 	}
 
 	void Reset(Reset e)

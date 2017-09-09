@@ -13,7 +13,7 @@ public class Main : Scene<TransitionData> {
 	
 	// Update is called once per frame
 	void Update () {
-		
+        Services.BoardManager.Update();
 	}
 
 	void InitializeServices()

@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class BoardManager {
 
+    private FSM<BoardManager> fsm;
+
     public int numRows, numCols;
 
     public int currentNumRows, currentNumCols;
@@ -12,10 +14,25 @@ public class BoardManager {
     public List<BoardSpace> centerSpaces;
     public List<Tile> tileBag;
 
+    public GameObject pivotPoint;
+
+    public Tile spawnedTile;
+    public Tile selectedTile;
+    public LayerMask spawnedTileLayer;
+
+
+
+    public void Update(){
+        fsm.Update();
+    }
+
 	public void InitializeBoard()
     {
+        spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
         CreateBoard();
         CreateTileBag();
+
+        pivotPoint = GameObject.FindGameObjectWithTag("PivotPoint");
 
         if(Services.BoardData.randomTiles){
 			for (int i = 0; i < numCols; i++)
@@ -38,6 +55,12 @@ public class BoardManager {
 
 
         }
+
+
+
+		fsm = new FSM<BoardManager>(this);
+		fsm.TransitionTo<SpawnTile>();
+        //Debug.Log(fsm);
 
 	}
 
@@ -149,4 +172,180 @@ public class BoardManager {
 		return null;
 	}
 
+	public void DrawTileToPlace()
+	{
+		Tile tileToPlace;
+		tileToPlace = DrawTile();
+		if (tileToPlace == null)
+		{
+            //yield return new WaitForSeconds (1f);
+            //mode = "Game Over";
+		}
+		else
+		{
+			SetupSpawnedTile(tileToPlace);
+			spawnedTile = tileToPlace;
+			spawnedTile.GetComponent<MeshRenderer>().sortingOrder = 2;
+		}
+	}
+
+	void SetupSpawnedTile(Tile tileToPlace)
+	{
+		tileToPlace.transform.SetParent(pivotPoint.transform);
+		tileToPlace.transform.localPosition = new Vector3(-5, 0, 0);
+		tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
+		//juicyManager.spawnTileAnimation(tileToPlace.gameObject);
+	}
+
+
+
+
+
+
+    public void SpawnTileAction(){
+
+        DrawTileToPlace();
+
+    }
+
+    public void SelectTileAction(){
+
+        Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+        if (Input.GetMouseButtonDown(0))
+        {
+            RaycastHit hit = new RaycastHit();
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity))
+            {
+                if (hit.transform.gameObject.layer == spawnedTileLayer)
+                {
+                    //ToggleGlow(spawnedTile, "bright");
+                    // SetSpaceGlow("dark");
+                    selectedTile = spawnedTile;
+                    spawnedTile = null;
+                }
+            }
+        }
+    }
+
+    public void PlaceTileAction(){
+        //Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+        //RaycastHit hit = new RaycastHit();
+        selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
+
+    }
+
+
+
+
+	private class Turn : FSM<BoardManager>.State { }
+
+	private class SpawnTile : Turn
+	{
+		public override void OnEnter()
+		{
+            Context.SpawnTileAction();
+		}
+		public override void Update()
+		{
+            TransitionTo<SelectTile>();
+            return;
+		}
+	}
+
+	private class SelectTile : Turn
+	{
+		public override void OnEnter()
+		{
+		}
+		public override void Update()
+		{
+            if (Context.spawnedTile != null)
+            {
+                Context.SelectTileAction();
+            } else{
+                TransitionTo<PlaceTile>();
+                return;
+            }
+
+
+
+		}
+	}
+
+	private class PlaceTile : Turn
+	{
+		public override void OnEnter()
+		{
+		}
+		public override void Update()
+		{
+            if (Context.selectedTile != null)
+            {
+                Context.PlaceTileAction();
+            } else{
+                TransitionTo<SelectStack>();
+                return;
+            }
+		}
+	}
+
+	private class SelectStack : Turn
+	{
+		public override void OnEnter()
+		{
+			//Context. ___
+		}
+		public override void Update()
+		{
+
+		}
+	}
+
+	private class QueueSpill : Turn
+	{
+		public override void OnEnter()
+		{
+			//Context. ___
+		}
+		public override void Update()
+		{
+
+		}
+	}
+
+	private class Interim : Turn
+	{
+		public override void OnEnter()
+		{
+			//Context. ___
+		}
+		public override void Update()
+		{
+
+		}
+	}
+
+	private class FinalizeSpill : Turn
+	{
+		public override void OnEnter()
+		{
+			//Context. ___
+		}
+		public override void Update()
+		{
+
+		}
+	}
+
+	private class GameOver : Turn
+	{
+		public override void OnEnter()
+		{
+			//Context. ___
+		}
+		public override void Update()
+		{
+
+		}
+	}
 }
