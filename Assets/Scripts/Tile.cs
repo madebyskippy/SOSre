@@ -5,8 +5,9 @@ using UnityEngine;
 public class Tile : MonoBehaviour {
 
    // private new Renderer render = GetComponent<Renderer>();
-	//public BoardSpace spaceQueuedToSpillOnto;
+	public BoardSpace spaceQueuedToSpillOnto;
 	public int color;
+
 
     void Start(){
         //render = 

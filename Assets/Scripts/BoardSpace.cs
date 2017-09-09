@@ -28,6 +28,12 @@ public class BoardSpace : MonoBehaviour {
         rowNum = row;
     }
 
+	public void PositionNewTile(Tile tileToPosition)
+	{
+		//juicy.AnimateTileMove(tileToPosition, provisionalTileCount, transform.position);
+		provisionalTileCount += 1;
+	}
+
     public void AddTile(Tile tileToAdd, bool positionTile){
 		if (!isCenterSpace)
 		{

@@ -7,7 +7,10 @@ public class Main : Scene<TransitionData> {
 	public LayerMask spawnedTileLayer;
 	public LayerMask topTileLayer;
 	public LayerMask invisPlane;
+    public LayerMask spillUILayer;
     public LayerMask topTilesAndSpillUI;
+
+    public GameObject ConfirmUndoUI;
 
 	// Use this for initialization
 	void Start () {
@@ -31,4 +34,8 @@ public class Main : Scene<TransitionData> {
 		InitializeServices();
 		Services.GameManager.currentCamera = GetComponentInChildren<Camera>();
 	}
+
+    public void ConfirmButton(){
+        Services.BoardManager.ConfirmSpill();
+    }
 }

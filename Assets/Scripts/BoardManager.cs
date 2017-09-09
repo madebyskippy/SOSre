@@ -25,9 +25,15 @@ public class BoardManager {
 
     public Tile spawnedTile;
     public Tile selectedTile;
+    public List<Tile> tilesQueuedToSpill;
     private BoardSpace selectedSpace;
+    public BoardSpace spaceToSpill;
+
+    private int spillDirectionX, spillDirectionZ;
 
     public bool stackSelected;
+    public bool startSpill;
+    public bool finalizeSpill;
 
     public bool tileInPosition;
     public int sideAboutToCollapse;
@@ -36,16 +42,18 @@ public class BoardManager {
     public LayerMask invisPlane;*/
 
 
-
     public void Update(){
         fsm.Update();
     }
 
 	public void InitializeBoard()
     {
-      /*  spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
-        topTileLayer = LayerMask.NameToLayer("TopTiles");
-        invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
+        /*  spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
+          topTileLayer = LayerMask.NameToLayer("TopTiles");
+          invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
+
+        Services.Main.ConfirmUndoUI.SetActive(false);
+
         CreateBoard();
         CreateTileBag();
 
@@ -268,6 +276,32 @@ public class BoardManager {
 		return spaceList;
 	}
 
+	int[] CalculateAdjacentSpace(int x, int z, int xDirection, int zDirection)
+	{
+		int[] coords = new int[2];
+		int targetX = x + xDirection;
+		if (targetX > currentHighestColIndex)
+		{
+			targetX = currentLowestColIndex;
+		}
+		else if (targetX < currentLowestColIndex)
+		{
+			targetX = currentHighestColIndex;
+		}
+		int targetZ = z + zDirection;
+		if (targetZ > currentHighestRowIndex)
+		{
+			targetZ = currentLowestRowIndex;
+		}
+		else if (targetZ < currentLowestRowIndex)
+		{
+			targetZ = currentHighestRowIndex;
+		}
+		coords[0] = targetX;
+		coords[1] = targetZ;
+		return coords;
+	}
+
 
     public void SpawnTileAction(){
 
@@ -378,19 +412,61 @@ public class BoardManager {
     }
 
     public void SelectStackAction(){
-
 		Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
         if(Input.GetMouseButtonDown(0)){
 
 			RaycastHit hit;
+
+			if (stackSelected)
+			{
+				//highlightspillarrow
+				//RaycastHit hit;
+				if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
+				{
+					//soundplayer.transform.GetChild(5).gameObject.GetComponent<AudioSource>().Play();
+					switch (hit.collider.transform.name)
+					{
+						case "MinusX":
+							spillDirectionX = -1;
+							break;
+						case "PlusX":
+							spillDirectionX = 1;
+							break;
+						case "MinusZ":
+							spillDirectionZ = -1;
+							break;
+						case "PlusZ":
+							spillDirectionZ = 1;
+							break;
+					}
+
+					startSpill = true;
+					//spaceToSpill = selectedSpace;
+
+					spillUI.SetActive(false);
+                    //QueueSpill(selectedSpace, xDirection, zDirection);
+                    //StartCoroutine(ChangeModeToFinalizeSpill());
+                    return;
+
+				}
+				else
+				{
+					startSpill = false;
+					//mode = "Select Stack";
+					//ToggleGlow(selectedSpace.tileList, "normal");
+					selectedSpace = null;
+				}
+			}
+
+
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.topTileLayer))
 			{
-  
-			    Vector3 tileHitLocation = hit.transform.position;
+                
+                Vector3 tileHitLocation = hit.transform.position;
 				BoardSpace space = CalculateSpaceFromLocation(tileHitLocation);
                 if (space.tileStack.Count > 1)
                 {
-                    //stackSelected = true;
+                    stackSelected = true;
                     /*
                     if (selectedSpace != null)
                     {
@@ -405,6 +481,7 @@ public class BoardManager {
                         ToggleGlow(space.tileList, "bright");
                     }*/
                     selectedSpace = space;
+                    spaceToSpill = selectedSpace;
                     Vector3 topTileLocation = selectedSpace.tileStack[selectedSpace.tileStack.Count - 1].transform.position;
                     Object.Destroy(spillUI);
                     spillUI = Object.Instantiate(Services.Prefabs.SpillUI,
@@ -415,9 +492,50 @@ public class BoardManager {
                 }
 			}
 
+
         }
     }
 
+    public void ConfirmSpill(){
+        finalizeSpill = true;
+    }
+
+	public void QueueSpillAction()
+	{
+        int boardSpaceX = spaceToSpill.colNum;
+		int boardSpaceZ = spaceToSpill.rowNum;
+		tilesQueuedToSpill = new List<Tile>();
+        int numTilesToMove = spaceToSpill.tileStack.Count;
+
+		/*totalSpillTime = Mathf.Max(totalSpillTime, numTilesToMove * 0.4f);
+
+		juicy.delayTileSpill = 0f;
+		juicy.xSpillDir = xDirection;
+		juicy.zSpillDir = zDirection;*/
+		spaceToSpill.provisionalTileCount = 0;
+		//spaceQueuedToSpillFrom = spaceToSpill;
+		//juicy.PositionStackToSpill(spaceToSpill);
+		for (int i = 0; i < numTilesToMove; i++)
+		{
+			int index = numTilesToMove - 1 - i;
+			Tile tileToMove = spaceToSpill.tileStack[index];
+			tilesQueuedToSpill.Add(tileToMove);
+            int[] targetCoords = CalculateAdjacentSpace(boardSpaceX, boardSpaceZ, spillDirectionX, spillDirectionZ);
+			boardSpaceX = targetCoords[0];
+			boardSpaceZ = targetCoords[1];
+			BoardSpace spaceToSpillOnto = board[boardSpaceX, boardSpaceZ];
+			tileToMove.spaceQueuedToSpillOnto = spaceToSpillOnto;
+            spaceToSpill.PositionNewTile(tileToMove);
+
+            spaceToSpillOnto.AddTile(tileToMove,true);
+        }
+
+
+	}
+
+    public void BoardFallAction(){
+        
+    }
 
 	private class Turn : FSM<BoardManager>.State { }
 
@@ -425,6 +543,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Services.Main.ConfirmUndoUI.SetActive(false);
             Context.SpawnTileAction();
 		}
 		public override void Update()
@@ -476,12 +595,12 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
-            //Context. ___
             Context.stackSelected = false;
+            Context.startSpill = false;
 		}
 		public override void Update()
 		{
-            if (!Context.stackSelected)
+            if (!Context.startSpill)
             {
                 Context.SelectStackAction();
             } else{
@@ -495,6 +614,28 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            
+			Services.Main.ConfirmUndoUI.SetActive(true);
+            Context.finalizeSpill = false;
+            Context.QueueSpillAction();
+		}
+		public override void Update()
+		{
+            if (!Context.finalizeSpill){
+                
+            } else{
+                TransitionTo<BoardFall>();
+                return;
+            }
+		}
+	}
+
+	private class BoardFall : Turn //interim
+	{
+		public override void OnEnter()
+		{
+            Services.Main.ConfirmUndoUI.SetActive(false);
+            Context.BoardFallAction();
 			//Context. ___
 		}
 		public override void Update()
@@ -503,7 +644,7 @@ public class BoardManager {
 		}
 	}
 
-	private class Interim : Turn
+/*	private class FinalizeSpill : Turn
 	{
 		public override void OnEnter()
 		{
@@ -513,19 +654,7 @@ public class BoardManager {
 		{
 
 		}
-	}
-
-	private class FinalizeSpill : Turn
-	{
-		public override void OnEnter()
-		{
-			//Context. ___
-		}
-		public override void Update()
-		{
-
-		}
-	}
+	}*/
 
 	private class GameOver : Turn
 	{
