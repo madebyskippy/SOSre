@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//[System.Serializable]
 public class BoardManager {
 
     private FSM<BoardManager> fsm;
@@ -9,6 +10,8 @@ public class BoardManager {
     public int numRows, numCols;
 
     public int currentNumRows, currentNumCols;
+
+    private int currentLowestColIndex, currentHighestColIndex, currentLowestRowIndex, currentHighestRowIndex;
 
     public BoardSpace[,] board;
     public List<BoardSpace> centerSpaces;
@@ -18,7 +21,12 @@ public class BoardManager {
 
     public Tile spawnedTile;
     public Tile selectedTile;
-    public LayerMask spawnedTileLayer;
+
+    public bool tileInPosition;
+    public int sideAboutToCollapse;
+    /*public LayerMask spawnedTileLayer;
+    public LayerMask topTileLayer;
+    public LayerMask invisPlane;*/
 
 
 
@@ -28,11 +36,18 @@ public class BoardManager {
 
 	public void InitializeBoard()
     {
-        spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
+      /*  spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
+        topTileLayer = LayerMask.NameToLayer("TopTiles");
+        invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
         CreateBoard();
         CreateTileBag();
 
         pivotPoint = GameObject.FindGameObjectWithTag("PivotPoint");
+
+        currentNumRows = numRows;
+        currentNumCols = numCols;
+        currentHighestRowIndex = numRows - 1;
+        currentHighestColIndex = numCols - 1;
 
         if(Services.BoardData.randomTiles){
 			for (int i = 0; i < numCols; i++)
@@ -60,7 +75,6 @@ public class BoardManager {
 
 		fsm = new FSM<BoardManager>(this);
 		fsm.TransitionTo<SpawnTile>();
-        //Debug.Log(fsm);
 
 	}
 
@@ -172,6 +186,7 @@ public class BoardManager {
 		return null;
 	}
 
+
 	public void DrawTileToPlace()
 	{
 		Tile tileToPlace;
@@ -193,13 +208,53 @@ public class BoardManager {
 	{
 		tileToPlace.transform.SetParent(pivotPoint.transform);
 		tileToPlace.transform.localPosition = new Vector3(-5, 0, 0);
-		tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
+        tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
 		//juicyManager.spawnTileAnimation(tileToPlace.gameObject);
 	}
 
+	BoardSpace CalculateSpaceFromLocation(Vector3 location)
+	{
+		int col = Mathf.RoundToInt(location.x - 0.5f + numCols / 2);
+		int row = Mathf.RoundToInt(location.z - 0.5f + numRows / 2);
+        return board[col, row];
+	}
 
-
-
+	public List<BoardSpace> GetSpaceListFromSideNum()
+	{
+		List<BoardSpace> spaceList = new List<BoardSpace>();
+		int indexToCollapse = 0;
+		if (sideAboutToCollapse == 0)
+		{
+			indexToCollapse = currentLowestColIndex;
+		}
+		else if (sideAboutToCollapse == 1)
+		{
+			indexToCollapse = currentHighestRowIndex;
+		}
+		else if (sideAboutToCollapse == 2)
+		{
+			indexToCollapse = currentHighestColIndex;
+		}
+		else
+		{
+			indexToCollapse = currentLowestRowIndex;
+		}
+		if ((sideAboutToCollapse % 2) == 0)
+		{
+			for (int i = currentLowestRowIndex; i < currentHighestRowIndex + 1; i++)
+			{
+				spaceList.Add(board[indexToCollapse, i]);
+			}
+		}
+		else
+		{
+			for (int i = currentLowestColIndex; i < currentHighestColIndex + 1; i++)
+			{
+				spaceList.Add(board[i, indexToCollapse]);
+			}
+		}
+		return spaceList;
+	}
 
 
     public void SpawnTileAction(){
@@ -214,23 +269,99 @@ public class BoardManager {
         if (Input.GetMouseButtonDown(0))
         {
             RaycastHit hit = new RaycastHit();
-            if (Physics.Raycast(ray, out hit, Mathf.Infinity))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spawnedTileLayer))
             {
-                if (hit.transform.gameObject.layer == spawnedTileLayer)
-                {
-                    //ToggleGlow(spawnedTile, "bright");
-                    // SetSpaceGlow("dark");
-                    selectedTile = spawnedTile;
-                    spawnedTile = null;
-                }
+                //ToggleGlow(spawnedTile, "bright");
+                // SetSpaceGlow("dark");
+                selectedTile = spawnedTile;
+                spawnedTile = null;
             }
         }
     }
 
     public void PlaceTileAction(){
-        //Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
-        //RaycastHit hit = new RaycastHit();
-        selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
+        Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit = new RaycastHit();
+        if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.topTileLayer))
+        {
+            //if (!CalculateSpaceFromLocation(hit.collider.transform.position).isCenterTile)
+            //{
+            Vector3 pointOnBoard = hit.transform.position;
+            selectedTile.transform.position = new Vector3(pointOnBoard.x, pointOnBoard.y + 0.2f, pointOnBoard.z);
+            selectedTile.transform.parent = null;
+            tileInPosition = true;
+            //BoardSpace space = CalculateSpaceFromLocation(pointOnBoard);
+            //ToggleGlow(space, "bright");
+            /*if (highlightedSpace != null)
+            {
+                if (highlightedSpace != space)
+                {
+                    ToggleGlow(highlightedSpace, "normal");
+                }
+            }
+            highlightedSpace = space;*/
+            //}
+        }
+        else
+		{
+            tileInPosition = false;
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.invisPlane))
+			{
+				selectedTile.transform.position = hit.point;
+			}
+            //selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
+  
+        }
+
+
+        //finalize tile placement
+        if(Input.GetMouseButtonDown(0) && tileInPosition){
+            tileInPosition = false;
+
+			BoardSpace space = CalculateSpaceFromLocation(selectedTile.transform.position);
+			space.AddTile(selectedTile, false);
+			selectedTile.GetComponent<MeshRenderer>().sortingOrder = 0;
+            //ToggleGlow(selectedTile, "normal");
+            //SetSpaceGlow("normal");
+            /*if (highlightedSpace != null)
+			{
+				ToggleGlow(highlightedSpace, "normal");
+			}*/
+            //CheckForScore();
+
+            if (currentNumCols == numCols && currentNumRows == numRows) //!firstTileFinalized)
+			{
+                
+				//firstTileFinalized = true;
+				if ((space.colNum == 0) && (space.rowNum != 0))
+				{
+					sideAboutToCollapse = 0;
+				}
+                else if (space.rowNum == numRows - 1)
+				{
+					sideAboutToCollapse = 1;
+				}
+				else if (space.colNum == numCols - 1)
+				{
+					sideAboutToCollapse = 2;
+				}
+				else
+				{
+					sideAboutToCollapse = 3;
+				}
+
+				List<BoardSpace> boardspaces = GetSpaceListFromSideNum();
+				foreach (BoardSpace bs in boardspaces)
+				{
+                    bs.gameObject.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[3];
+					bs.aboutToCollapse = true;
+				}
+			}
+            //selectedTile.GetComponent<AudioSource>().Play();
+
+            selectedTile = null;
+
+        }
 
     }
 
@@ -283,11 +414,21 @@ public class BoardManager {
             {
                 Context.PlaceTileAction();
             } else{
-                TransitionTo<SelectStack>();
+                TransitionTo<BoardFall>();
                 return;
             }
 		}
 	}
+
+    private class BoardFall : Turn{
+        public override void OnEnter(){
+            
+        }
+        public override void Update(){
+            
+        }
+
+    }
 
 	private class SelectStack : Turn
 	{

@@ -17,6 +17,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 18c1923ae1da545bd9e41606f1611035, type: 2}
   - {fileID: 2100000, guid: c214a43cf71624649b2d34cc786b9ead, type: 2}
   boardMats:
-  - {fileID: 2100000, guid: b8afd73c9e867ee4e8e0b5c59d96eb91, type: 2}
+  - {fileID: 2100000, guid: 39effba3a36cf4faeaa02f37215ab1d5, type: 2}
   - {fileID: 2100000, guid: 756f9047843b642a09f47b5a60ef45ad, type: 2}
   - {fileID: 2100000, guid: fc6432564e9c3444a9c833304dd98ecf, type: 2}
+  - {fileID: 2100000, guid: d613ccb4abff94a37af46bbbf97b986d, type: 2}

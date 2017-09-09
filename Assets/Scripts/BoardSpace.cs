@@ -7,6 +7,7 @@ public class BoardSpace : MonoBehaviour {
     public int color;
     public int colNum, rowNum;
     public bool isCenterSpace;
+    public bool aboutToCollapse;
 
     public List<Tile> tileStack;
     public int provisionalTileCount;
