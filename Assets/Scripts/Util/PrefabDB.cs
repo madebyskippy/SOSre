@@ -16,4 +16,8 @@ public class PrefabDB : ScriptableObject {
     private GameObject boardspace;
     public GameObject BoardSpace { get { return boardspace; }}
 
+	[SerializeField]
+	private GameObject spillUI;
+	public GameObject SpillUI { get { return spillUI; } }
+
 }

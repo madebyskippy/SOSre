@@ -7,6 +7,7 @@ public class Main : Scene<TransitionData> {
 	public LayerMask spawnedTileLayer;
 	public LayerMask topTileLayer;
 	public LayerMask invisPlane;
+    public LayerMask topTilesAndSpillUI;
 
 	// Use this for initialization
 	void Start () {

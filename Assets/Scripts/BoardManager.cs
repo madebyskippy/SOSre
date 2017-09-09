@@ -16,11 +16,18 @@ public class BoardManager {
     public BoardSpace[,] board;
     public List<BoardSpace> centerSpaces;
     public List<Tile> tileBag;
+    public GameObject spillUI;
+    private Component[] spillArrowRenderers;
+
+    public int rotationIndex;
 
     public GameObject pivotPoint;
 
     public Tile spawnedTile;
     public Tile selectedTile;
+    private BoardSpace selectedSpace;
+
+    public bool stackSelected;
 
     public bool tileInPosition;
     public int sideAboutToCollapse;
@@ -46,8 +53,13 @@ public class BoardManager {
 
         currentNumRows = numRows;
         currentNumCols = numCols;
+
+        currentLowestColIndex = 0;
+        currentLowestRowIndex = 0;
         currentHighestRowIndex = numRows - 1;
         currentHighestColIndex = numCols - 1;
+
+        rotationIndex = 0;
 
         if(Services.BoardData.randomTiles){
 			for (int i = 0; i < numCols; i++)
@@ -365,7 +377,46 @@ public class BoardManager {
 
     }
 
+    public void SelectStackAction(){
 
+		Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+        if(Input.GetMouseButtonDown(0)){
+
+			RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.topTileLayer))
+			{
+  
+			    Vector3 tileHitLocation = hit.transform.position;
+				BoardSpace space = CalculateSpaceFromLocation(tileHitLocation);
+                if (space.tileStack.Count > 1)
+                {
+                    //stackSelected = true;
+                    /*
+                    if (selectedSpace != null)
+                    {
+                        if (selectedSpace != space)
+                        {
+                            ToggleGlow(selectedSpace.tileList, "normal");
+                            ToggleGlow(space.tileList, "bright");
+                        }
+                    }
+                    else
+                    {
+                        ToggleGlow(space.tileList, "bright");
+                    }*/
+                    selectedSpace = space;
+                    Vector3 topTileLocation = selectedSpace.tileStack[selectedSpace.tileStack.Count - 1].transform.position;
+                    Object.Destroy(spillUI);
+                    spillUI = Object.Instantiate(Services.Prefabs.SpillUI,
+                        new Vector3(topTileLocation.x, topTileLocation.y, topTileLocation.z), Quaternion.identity) as GameObject;
+                    spillArrowRenderers = spillUI.GetComponentsInChildren<MeshRenderer>();
+                    spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
+                    spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
+                }
+			}
+
+        }
+    }
 
 
 	private class Turn : FSM<BoardManager>.State { }
@@ -414,31 +465,29 @@ public class BoardManager {
             {
                 Context.PlaceTileAction();
             } else{
-                TransitionTo<BoardFall>();
+                TransitionTo<SelectStack>();
                 return;
             }
 		}
 	}
 
-    private class BoardFall : Turn{
-        public override void OnEnter(){
-            
-        }
-        public override void Update(){
-            
-        }
-
-    }
 
 	private class SelectStack : Turn
 	{
 		public override void OnEnter()
 		{
-			//Context. ___
+            //Context. ___
+            Context.stackSelected = false;
 		}
 		public override void Update()
 		{
-
+            if (!Context.stackSelected)
+            {
+                Context.SelectStackAction();
+            } else{
+                TransitionTo<QueueSpill>();
+                return;
+            }
 		}
 	}
 

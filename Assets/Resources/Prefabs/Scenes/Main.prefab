@@ -97,7 +97,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1772673615731464
 GameObject:
   m_ObjectHideFlags: 0
@@ -511,6 +511,9 @@ MonoBehaviour:
   invisPlane:
     serializedVersion: 2
     m_Bits: 1024
+  topTilesAndSpillDirectionUI:
+    serializedVersion: 2
+    m_Bits: 2304
 --- !u!124 &124550501013672500
 Behaviour:
   m_ObjectHideFlags: 1
