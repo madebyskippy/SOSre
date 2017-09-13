@@ -5,6 +5,7 @@ using UnityEngine;
 public class BoardSpace : MonoBehaviour {
 
     public int color;
+    public int centerColor; // -1 is default, 0-3 is rgby
     public int colNum, rowNum;
     public bool isCenterSpace;
     public bool aboutToCollapse;
@@ -24,6 +25,7 @@ public class BoardSpace : MonoBehaviour {
 
     public void SetBoardSpace(int c, int col, int row){
         color = c;
+        centerColor = -1;
         colNum = col;
         rowNum = row;
     }
@@ -57,12 +59,13 @@ public class BoardSpace : MonoBehaviour {
 		}
 		else
 		{
-			color = tileToAdd.color;
+            //color = tileToAdd.color;
+            centerColor = tileToAdd.color;
             //GameObject.FindWithTag("TurnManager").GetComponent<TurnManager>().scoringMode = true;
             GetComponent<MeshRenderer>().material = Services.Materials.TileMats[tileToAdd.color];
 			Destroy (tileToAdd.gameObject);
 			//juicy.TileSinkAnimation(tileToAdd.gameObject, transform.gameObject);
-			//boardManager.centerSpaceChanged = true;
+            Services.BoardManager.centerSpaceChanged = true;
 
 		}
     }

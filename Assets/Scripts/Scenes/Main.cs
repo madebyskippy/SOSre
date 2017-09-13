@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Main : Scene<TransitionData> {
 
@@ -11,6 +12,8 @@ public class Main : Scene<TransitionData> {
     public LayerMask topTilesAndSpillUI;
 
     public GameObject ConfirmUndoUI;
+    public Text Score;
+    public GameObject GameOverText;
 
 	// Use this for initialization
 	void Start () {
