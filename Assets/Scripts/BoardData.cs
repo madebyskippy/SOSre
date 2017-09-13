@@ -14,7 +14,7 @@ public class BoardData {
         numRows = 6;
         numCols = numRows;
 
-        initialNumberOfEachTileColor = new int[4] { 10, 10, 10, 10 };
+        initialNumberOfEachTileColor = new int[4] { 20, 20, 20, 20 };
 
         randomTiles = true;
     }

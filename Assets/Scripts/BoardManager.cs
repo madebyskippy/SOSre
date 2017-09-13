@@ -26,6 +26,7 @@ public class BoardManager {
     public Tile spawnedTile;
     public Tile selectedTile;
     public List<Tile> tilesQueuedToSpill;
+    public BoardSpace spaceQueuedToSpillFrom;
     private BoardSpace selectedSpace;
     public BoardSpace spaceToSpill;
 
@@ -302,10 +303,39 @@ public class BoardManager {
 		return coords;
 	}
 
+	int[] GetDirectionFromSideNum()
+	{
+		int[] coords = new int[2];
+		if ((sideAboutToCollapse % 2) == 0)
+		{
+			coords[0] = 1 - sideAboutToCollapse;
+			coords[1] = 0;
+		}
+		else
+		{
+			coords[0] = 0;
+			coords[1] = sideAboutToCollapse - 2;
+		}
+		return coords;
+	}
+
+    private void IndicateCollapsibleSide(){
+		List<BoardSpace> boardspaces = GetSpaceListFromSideNum();
+		foreach (BoardSpace bs in boardspaces)
+		{
+			bs.gameObject.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[3];
+			//Debug.Log("recolor collapsible boardspaces");
+			bs.aboutToCollapse = true;
+		}
+    }
 
     public void SpawnTileAction(){
 
         DrawTileToPlace();
+        if (currentNumCols < numCols || currentNumRows < numRows)
+        {
+            IndicateCollapsibleSide();
+        }
 
     }
 
@@ -396,12 +426,7 @@ public class BoardManager {
 					sideAboutToCollapse = 3;
 				}
 
-				List<BoardSpace> boardspaces = GetSpaceListFromSideNum();
-				foreach (BoardSpace bs in boardspaces)
-				{
-                    bs.gameObject.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[3];
-					bs.aboutToCollapse = true;
-				}
+                IndicateCollapsibleSide();
 			}
             //selectedTile.GetComponent<AudioSource>().Play();
 
@@ -423,6 +448,8 @@ public class BoardManager {
 				//RaycastHit hit;
 				if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
 				{
+                    spillDirectionX = 0;
+                    spillDirectionZ = 0;
 					//soundplayer.transform.GetChild(5).gameObject.GetComponent<AudioSource>().Play();
 					switch (hit.collider.transform.name)
 					{
@@ -500,41 +527,115 @@ public class BoardManager {
         finalizeSpill = true;
     }
 
+    private void QueueSpillHelper(BoardSpace toBeSpilled, int xDirection, int zDirection){
+
+        int boardSpaceX = toBeSpilled.colNum;
+        int boardSpaceZ = toBeSpilled.rowNum;
+        tilesQueuedToSpill = new List<Tile>();
+        int numTilesToMove = toBeSpilled.tileStack.Count;
+                /*totalSpillTime = Mathf.Max(totalSpillTime, numTilesToMove * 0.4f)
+
+        juicy.delayTileSpill = 0f;
+        juicy.xSpillDir = xDirection;
+        juicy.zSpillDir = zDirection;*/
+        toBeSpilled.provisionalTileCount = 0;
+        spaceQueuedToSpillFrom = toBeSpilled;
+		//juicy.PositionStackToSpill(spaceToSpill);
+
+        for (int i = 0; i < numTilesToMove; i++)
+        {
+            //toBeSpilled.provisionalTileCount = 0;
+            int index = numTilesToMove - 1 - i;
+            Tile tileToMove = toBeSpilled.tileStack[index];
+            tilesQueuedToSpill.Add(tileToMove);
+            int[] targetCoords = CalculateAdjacentSpace(boardSpaceX, boardSpaceZ, xDirection, zDirection);
+            boardSpaceX = targetCoords[0];
+            boardSpaceZ = targetCoords[1];
+            BoardSpace spaceToSpillOnto = board[boardSpaceX, boardSpaceZ];
+            tileToMove.spaceQueuedToSpillOnto = spaceToSpillOnto;
+
+			toBeSpilled.PositionNewTile(tileToMove);
+            toBeSpilled.tileStack.Remove(tileToMove);
+            spaceToSpillOnto.AddTile(tileToMove, true);
+
+            //this isn't being added?
+        }
+    }
+
 	public void QueueSpillAction()
 	{
-        int boardSpaceX = spaceToSpill.colNum;
-		int boardSpaceZ = spaceToSpill.rowNum;
-		tilesQueuedToSpill = new List<Tile>();
-        int numTilesToMove = spaceToSpill.tileStack.Count;
-
-		/*totalSpillTime = Mathf.Max(totalSpillTime, numTilesToMove * 0.4f);
-
-		juicy.delayTileSpill = 0f;
-		juicy.xSpillDir = xDirection;
-		juicy.zSpillDir = zDirection;*/
-		spaceToSpill.provisionalTileCount = 0;
-		//spaceQueuedToSpillFrom = spaceToSpill;
-		//juicy.PositionStackToSpill(spaceToSpill);
-		for (int i = 0; i < numTilesToMove; i++)
-		{
-			int index = numTilesToMove - 1 - i;
-			Tile tileToMove = spaceToSpill.tileStack[index];
-			tilesQueuedToSpill.Add(tileToMove);
-            int[] targetCoords = CalculateAdjacentSpace(boardSpaceX, boardSpaceZ, spillDirectionX, spillDirectionZ);
-			boardSpaceX = targetCoords[0];
-			boardSpaceZ = targetCoords[1];
-			BoardSpace spaceToSpillOnto = board[boardSpaceX, boardSpaceZ];
-			tileToMove.spaceQueuedToSpillOnto = spaceToSpillOnto;
-            spaceToSpill.PositionNewTile(tileToMove);
-
-            spaceToSpillOnto.AddTile(tileToMove,true);
-        }
+        QueueSpillHelper(spaceToSpill, spillDirectionX, spillDirectionZ);
+       // spaceToSpill.provisionalTileCount = 0;
 
 
 	}
 
     public void BoardFallAction(){
-        
+        List<BoardSpace> spacesToCollapse = GetSpaceListFromSideNum();
+
+		int[] coords = GetDirectionFromSideNum();
+		int xDirection = coords[0];
+		int zDirection = coords[1];
+
+		if ((sideAboutToCollapse % 2) == 0){
+			currentNumCols -= 1;
+			if (sideAboutToCollapse == 0){
+				currentLowestColIndex += 1;
+			}
+			else{
+				currentHighestColIndex -= 1;
+			}
+		}
+		else{
+			currentNumRows -= 1;
+			if (sideAboutToCollapse == 3){
+				currentLowestRowIndex += 1;
+			}
+			else{
+				currentHighestRowIndex -= 1;
+			}
+		}
+
+		List<List<Tile>> spillQueueList = new List<List<Tile>>();
+
+
+        Debug.Log("destroying board spaces");
+		foreach (BoardSpace space in spacesToCollapse)
+		{
+			QueueSpillHelper(space, xDirection, zDirection);
+			spillQueueList.Add(tilesQueuedToSpill);
+            //juicy.CollapseSideSpaces(space.gameObject, spacesToCollapse.Count);
+
+            Object.Destroy(space.gameObject);
+
+		}
+
+        /*
+        Debug.Log("resetting the board spaces spilled onto");
+		for (int i = 0; i < spacesToCollapse.Count; i++)
+		{
+            foreach (Tile tile in spillQueueList[i])
+			{
+				spaceQueuedToSpillFrom.tileStack.Remove(tile);
+			}
+
+			foreach (Tile tile in spillQueueList[i])
+			{
+                tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
+                tile.spaceQueuedToSpillOnto.AddTile(tile, false);
+               //tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
+			}
+		}*/
+
+
+		sideAboutToCollapse = (sideAboutToCollapse + 1) % 4;
+
+    /*    foreach(BoardSpace bs in sideSpaces){
+            Object.Destroy(bs.gameObject);
+        }*/
+
+
+
     }
 
 	private class Turn : FSM<BoardManager>.State { }
@@ -543,6 +644,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Debug.Log("SpawnTile");
             Services.Main.ConfirmUndoUI.SetActive(false);
             Context.SpawnTileAction();
 		}
@@ -557,6 +659,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Debug.Log("SelectTile");
 		}
 		public override void Update()
 		{
@@ -577,6 +680,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Debug.Log("PlaceTile");
 		}
 		public override void Update()
 		{
@@ -595,6 +699,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Debug.Log("SelectStack");
             Context.stackSelected = false;
             Context.startSpill = false;
 		}
@@ -614,7 +719,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
-            
+            Debug.Log("QueueSpill");
 			Services.Main.ConfirmUndoUI.SetActive(true);
             Context.finalizeSpill = false;
             Context.QueueSpillAction();
@@ -634,6 +739,7 @@ public class BoardManager {
 	{
 		public override void OnEnter()
 		{
+            Debug.Log("BoardFall");
             Services.Main.ConfirmUndoUI.SetActive(false);
             Context.BoardFallAction();
 			//Context. ___
@@ -641,6 +747,8 @@ public class BoardManager {
 		public override void Update()
 		{
 
+			TransitionTo<SpawnTile>();
+			return;
 		}
 	}
 

@@ -31,12 +31,15 @@ public class BoardSpace : MonoBehaviour {
 	public void PositionNewTile(Tile tileToPosition)
 	{
 		//juicy.AnimateTileMove(tileToPosition, provisionalTileCount, transform.position);
-		provisionalTileCount += 1;
+        tileToPosition.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
+		//provisionalTileCount += 1;
 	}
 
     public void AddTile(Tile tileToAdd, bool positionTile){
 		if (!isCenterSpace)
 		{
+
+           // Debug.Log("before adding: "+colNum + ", " + rowNum + ": " + provisionalTileCount);
 			if (tileStack.Count > 0)
 			{
 				tileStack[tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("Default");
@@ -50,6 +53,7 @@ public class BoardSpace : MonoBehaviour {
 			provisionalTileCount += 1;
 			tileStack.Add(tileToAdd);
 			tileToAdd.gameObject.layer = LayerMask.NameToLayer("TopTiles");
+            //Debug.Log(colNum + ", " + rowNum + ": "+provisionalTileCount);
 		}
 		else
 		{
