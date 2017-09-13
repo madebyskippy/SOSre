@@ -57,13 +57,13 @@ public class BoardSpace : MonoBehaviour {
 		}
 		else
 		{
-		/*	//color = tileToAdd.color;
-			GameObject.FindWithTag("TurnManager").GetComponent<TurnManager>().scoringMode = true;
-			GetComponent<MeshRenderer>().material = boardManager.mats[tileToAdd.color];
-			//Destroy (tileToAdd.gameObject);
+			color = tileToAdd.color;
+            //GameObject.FindWithTag("TurnManager").GetComponent<TurnManager>().scoringMode = true;
+            GetComponent<MeshRenderer>().material = Services.Materials.TileMats[tileToAdd.color];
+			Destroy (tileToAdd.gameObject);
 			//juicy.TileSinkAnimation(tileToAdd.gameObject, transform.gameObject);
-			boardManager.centerSpaceChanged = true;
-            */
+			//boardManager.centerSpaceChanged = true;
+
 		}
     }
 

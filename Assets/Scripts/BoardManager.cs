@@ -7,6 +7,7 @@ public class BoardManager {
 
     private FSM<BoardManager> fsm;
 
+    public int score;
     public int numRows, numCols;
 
     public int currentNumRows, currentNumCols;
