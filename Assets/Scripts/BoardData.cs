@@ -11,7 +11,7 @@ public class BoardData {
     public bool randomTiles;
 
     public void InitializeBoardData(){
-        numRows = 8;
+        numRows = 6;
         numCols = numRows;
 
         initialNumberOfEachTileColor = new int[4] { 20, 20, 20, 20 };

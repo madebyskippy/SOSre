@@ -16,6 +16,10 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 9e8a3f6de08de42fcbb02cbbec5b0ee2, type: 2}
   - {fileID: 2100000, guid: 18c1923ae1da545bd9e41606f1611035, type: 2}
   - {fileID: 2100000, guid: c214a43cf71624649b2d34cc786b9ead, type: 2}
+  highlightShaders:
+  - {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 4800000, guid: 1e274a0a84f72844eb1ebc50280366b3, type: 3}
+  - {fileID: 4800000, guid: 6e2a2dbc27b3c4805a112041ec3c28ae, type: 3}
   boardMats:
   - {fileID: 2100000, guid: 39effba3a36cf4faeaa02f37215ab1d5, type: 2}
   - {fileID: 2100000, guid: 756f9047843b642a09f47b5a60ef45ad, type: 2}

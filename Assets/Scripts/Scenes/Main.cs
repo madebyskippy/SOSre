@@ -41,4 +41,8 @@ public class Main : Scene<TransitionData> {
     public void ConfirmButton(){
         Services.BoardManager.ConfirmSpill();
     }
+
+    public void UndoButton(){
+        Services.BoardManager.UndoSpill();
+    }
 }

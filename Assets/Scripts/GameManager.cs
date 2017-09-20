@@ -23,6 +23,14 @@ public class GameManager : MonoBehaviour {
 	void Update()
 	{
 		Services.TaskManager.Update();
+
+        if(Input.GetKeyUp(KeyCode.Escape)){
+            Application.Quit();
+        }
+
+        if(Input.GetKeyUp(KeyCode.R)){
+            Services.SceneStackManager.Swap<TitleScreen>();
+        }
 	}
 
 	void InitializeServices()

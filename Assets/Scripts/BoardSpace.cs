@@ -70,4 +70,26 @@ public class BoardSpace : MonoBehaviour {
 		}
     }
 
+	public void ResetTilesToPosition()
+	{
+		for (int i = 0; i < tileStack.Count; i++)
+        {
+			Tile tile = tileStack[i];
+            if (tile.gameObject != null)
+            {
+                //iTween.Stop(tile.gameObject);
+                tile.transform.rotation = Quaternion.Euler(Vector3.zero);
+                tile.transform.position = new Vector3(transform.position.x, i * 0.2f + 0.1f, transform.position.z);
+                if (i == tileStack.Count - 1)
+                {
+                    tile.gameObject.layer = LayerMask.NameToLayer("TopTiles");
+                }
+                else
+                {
+                    tile.gameObject.layer = LayerMask.NameToLayer("Default");
+                }
+            }
+		}
+	}
+
 }

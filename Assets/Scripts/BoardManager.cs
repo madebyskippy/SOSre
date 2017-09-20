@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//[System.Serializable]
 public class BoardManager
 {
 
     private FSM<BoardManager> fsm;
+
+    public GameObject mainBoard;
 
     public int score;
     public int numRows, numCols;
@@ -22,6 +23,7 @@ public class BoardManager
     private Component[] spillArrowRenderers;
 
     public bool centerSpaceChanged;
+    public bool undoSpill;
 
     public int rotationIndex;
 
@@ -31,6 +33,7 @@ public class BoardManager
     public Tile selectedTile;
     public List<Tile> tilesQueuedToSpill;
     public BoardSpace spaceQueuedToSpillFrom;
+
     private BoardSpace selectedSpace;
     public BoardSpace spaceToSpill;
 
@@ -44,11 +47,14 @@ public class BoardManager
 
     public bool tileInPosition;
     public int sideAboutToCollapse;
+
+    public BoardSpace highlightedSpace;
     /*public LayerMask spawnedTileLayer;
     public LayerMask topTileLayer;
     public LayerMask invisPlane;*/
 
 
+    public enum Brightness {Bright,Dark,Normal}
 
     public void Update()
     {
@@ -61,6 +67,7 @@ public class BoardManager
           topTileLayer = LayerMask.NameToLayer("TopTiles");
           invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
 
+        mainBoard = GameObject.FindWithTag("Board");
         Services.Main.ConfirmUndoUI.SetActive(false);
 
         CreateBoard();
@@ -159,6 +166,7 @@ public class BoardManager
     {
         Vector3 location = new Vector3(colNum - numCols / 2 + 0.5f, 0, rowNum - numRows / 2 + 0.5f);
         GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.LookRotation(Vector3.down)) as GameObject;
+        boardSpace.transform.SetParent(mainBoard.transform);
         boardSpace.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[color];
         boardSpace.GetComponent<BoardSpace>().SetBoardSpace(color, colNum, rowNum);
         if (IsCentered(colNum, numCols) && IsCentered(rowNum, numRows))
@@ -178,6 +186,7 @@ public class BoardManager
         //GameObject tile;
         Vector3 offscreen = new Vector3(-1000, -1000, -1000);
         GameObject tile = Object.Instantiate(Services.Prefabs.Tile, offscreen, Quaternion.identity) as GameObject;
+        tile.transform.SetParent(mainBoard.transform);
         tile.GetComponent<MeshRenderer>().material = Services.Materials.TileMats[materialIndex];
         tile.GetComponent<Tile>().SetTile(materialIndex);
         tileBag.Add(tile.GetComponent<Tile>());
@@ -366,8 +375,8 @@ public class BoardManager
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spawnedTileLayer))
             {
-                //ToggleGlow(spawnedTile, "bright");
-                // SetSpaceGlow("dark");
+                ToggleTileGlow(spawnedTile, Brightness.Bright);
+                SetSpaceGlow(Brightness.Dark);
                 selectedTile = spawnedTile;
                 spawnedTile = null;
             }
@@ -386,17 +395,17 @@ public class BoardManager
             selectedTile.transform.position = new Vector3(pointOnBoard.x, pointOnBoard.y + 0.2f, pointOnBoard.z);
             selectedTile.transform.parent = null;
             tileInPosition = true;
-            //BoardSpace space = CalculateSpaceFromLocation(pointOnBoard);
-            //ToggleGlow(space, "bright");
-            /*if (highlightedSpace != null)
+            BoardSpace space = CalculateSpaceFromLocation(pointOnBoard);
+            ToggleSpaceGlow(space, Brightness.Bright);
+            if (highlightedSpace != null)
             {
                 if (highlightedSpace != space)
                 {
-                    ToggleGlow(highlightedSpace, "normal");
+                    ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
                 }
             }
-            highlightedSpace = space;*/
-            //}
+            highlightedSpace = space;
+
         }
         else
         {
@@ -405,8 +414,12 @@ public class BoardManager
             {
                 selectedTile.transform.position = hit.point;
             }
-            //selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
-
+			//selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
+			if (highlightedSpace != null)
+			{
+                ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
+				highlightedSpace = null;
+			}
         }
 
 
@@ -418,12 +431,12 @@ public class BoardManager
             BoardSpace space = CalculateSpaceFromLocation(selectedTile.transform.position);
             space.AddTile(selectedTile, false);
             selectedTile.GetComponent<MeshRenderer>().sortingOrder = 0;
-            //ToggleGlow(selectedTile, "normal");
-            //SetSpaceGlow("normal");
-            /*if (highlightedSpace != null)
+            ToggleTileGlow(selectedTile, Brightness.Normal);
+            SetSpaceGlow(Brightness.Normal);
+            if (highlightedSpace != null)
 			{
-				ToggleGlow(highlightedSpace, "normal");
-			}*/
+                ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
+			}
             //CheckForScore();
 
             if (currentNumCols == numCols && currentNumRows == numRows) //!firstTileFinalized)
@@ -460,6 +473,11 @@ public class BoardManager
     public void SelectStackAction()
     {
         Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+      /*  if(!stackSelected){
+			SetIneligibleSpaceGlow(Brightness.Dark);
+        } else{
+            SetIneligibleSpaceGlow(Brightness.Normal);
+        }*/
         if (Input.GetMouseButtonDown(0))
         {
 
@@ -503,52 +521,79 @@ public class BoardManager
                 {
                     startSpill = false;
                     //mode = "Select Stack";
-                    //ToggleGlow(selectedSpace.tileList, "normal");
-                    selectedSpace = null;
+                   /* if (selectedSpace != null)
+                    {
+                        ToggleTileGlow(selectedSpace.tileStack, Brightness.Normal);
+                    }*/
+                    //selectedSpace = null;
                 }
             }
 
 
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.topTileLayer))
             {
-
                 Vector3 tileHitLocation = hit.transform.position;
                 BoardSpace space = CalculateSpaceFromLocation(tileHitLocation);
                 if (space.tileStack.Count > 1)
                 {
                     stackSelected = true;
-                    /*
+
                     if (selectedSpace != null)
                     {
                         if (selectedSpace != space)
                         {
-                            ToggleGlow(selectedSpace.tileList, "normal");
-                            ToggleGlow(space.tileList, "bright");
+                            ToggleTileGlow(selectedSpace.tileStack, Brightness.Normal);
+                            ToggleTileGlow(space.tileStack, Brightness.Bright);
                         }
                     }
                     else
                     {
-                        ToggleGlow(space.tileList, "bright");
-                    }*/
+                        ToggleTileGlow(space.tileStack, Brightness.Bright);
+                    }
                     selectedSpace = space;
                     spaceToSpill = selectedSpace;
                     Vector3 topTileLocation = selectedSpace.tileStack[selectedSpace.tileStack.Count - 1].transform.position;
                     Object.Destroy(spillUI);
                     spillUI = Object.Instantiate(Services.Prefabs.SpillUI,
                         new Vector3(topTileLocation.x, topTileLocation.y, topTileLocation.z), Quaternion.identity) as GameObject;
+                    spillUI.transform.SetParent(mainBoard.transform);
                     spillArrowRenderers = spillUI.GetComponentsInChildren<MeshRenderer>();
                     spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
                     spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
                 }
             }
 
-
         }
+
+
+        HighlightSpillArrow(ray);
     }
 
     public void ConfirmSpill()
     {
         finalizeSpill = true;
+        ToggleTileGlow(tilesQueuedToSpill,Brightness.Normal);
+    }
+
+    public void UndoSpill(){
+        undoSpill = true;
+        spillUI.SetActive(true);
+
+        spaceQueuedToSpillFrom.tileStack = tilesQueuedToSpill;
+        spaceQueuedToSpillFrom.ResetTilesToPosition();
+
+        foreach(Tile tile in tilesQueuedToSpill){
+            tile.spaceQueuedToSpillOnto.tileStack.Remove(tile);
+            if (tile.spaceQueuedToSpillOnto.tileStack.Count > 0)
+            {
+                tile.spaceQueuedToSpillOnto.tileStack[tile.spaceQueuedToSpillOnto.tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("TopTiles");
+            }
+            tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
+
+        }
+        spaceQueuedToSpillFrom.provisionalTileCount = spaceQueuedToSpillFrom.tileStack.Count;
+        spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
+        spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
     }
 
     private void QueueSpillHelper(BoardSpace toBeSpilled, int xDirection, int zDirection)
@@ -592,8 +637,9 @@ juicy.zSpillDir = zDirection;*/
         QueueSpillHelper(spaceToSpill, spillDirectionX, spillDirectionZ);
         // spaceToSpill.provisionalTileCount = 0;
 
-
     }
+
+
 
     public void BoardFallAction()
     {
@@ -630,8 +676,6 @@ juicy.zSpillDir = zDirection;*/
 
         List<List<Tile>> spillQueueList = new List<List<Tile>>();
 
-
-        Debug.Log("destroying board spaces");
         foreach (BoardSpace space in spacesToCollapse)
         {
             QueueSpillHelper(space, xDirection, zDirection);
@@ -717,6 +761,133 @@ juicy.zSpillDir = zDirection;*/
         }
     }
 
+    public void ToggleTileGlow(List<Tile> tiles, Brightness brightness){
+        switch(brightness){
+            case Brightness.Normal:
+                foreach (Tile tile in tiles)
+                {
+                    if (tile != null)
+                    {
+                        tile.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[0];
+                    }
+                }
+                break;
+            case Brightness.Bright:
+                foreach(Tile tile in tiles){
+                    if (tile != null)
+                    {
+                        tile.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[1];
+                    }
+                }
+                break;
+            case Brightness.Dark:
+				foreach (Tile tile in tiles)
+				{
+                    if (tile != null)
+                    {
+                        tile.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[2];
+                    }
+                }
+                break;
+        }
+    }
+
+    public void ToggleTileGlow(Tile tile, Brightness brightness){
+		List<Tile> tiles = new List<Tile>();
+		tiles.Add(tile);
+		ToggleTileGlow(tiles, brightness);
+    }
+
+    public void ToggleSpaceGlow(BoardSpace space, Brightness brightness){
+        //if(!space.aboutToCollapse){
+			switch (brightness)
+			{
+				case Brightness.Normal:
+                    space.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[0];
+					break;
+				case Brightness.Bright:
+                    space.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[1];
+					break;
+				case Brightness.Dark:
+                    space.transform.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[2];
+					break;
+			}
+            ToggleTileGlow(space.tileStack,brightness);
+      //  }
+    }
+
+	public void ToggleRendererGlow(Renderer renderer, Brightness brightness)
+	{
+		switch (brightness)
+		{
+			case Brightness.Normal:
+				renderer.material.shader = Services.Materials.HighlightShaders[0];
+				break;
+			case Brightness.Bright:
+                renderer.material.shader = Services.Materials.HighlightShaders[1];
+				break;
+			case Brightness.Dark:
+                renderer.material.shader = Services.Materials.HighlightShaders[2];
+				break;
+		}
+		
+	}
+
+	public void ToggleGameObjGlow(GameObject obj, Brightness brightness)
+	{
+		switch (brightness)
+		{
+			case Brightness.Normal:
+				obj.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[0];
+				break;
+			case Brightness.Bright:
+				obj.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[1];
+				break;
+			case Brightness.Dark:
+				obj.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[2];
+				break;
+		}
+
+	}
+	void SetSpaceGlow(Brightness brightness)
+	{
+		foreach (BoardSpace space in board)
+		{
+			if (space != null)
+			{
+                if (!space.isCenterSpace && (space.tileStack.Count < 1))
+				{
+					ToggleSpaceGlow(space, brightness);
+				}
+			}
+		}
+	}
+
+    void SetIneligibleSpaceGlow(Brightness brightness){
+        foreach(BoardSpace space in board){
+            if (space != null){
+                if(!space.isCenterSpace && (space.tileStack.Count < 2)){
+                    ToggleSpaceGlow(space, brightness);
+                }
+            }
+        }
+    }
+
+    public void HighlightSpillArrow(Ray ray){
+        if (spillArrowRenderers != null)
+        {
+            foreach (Renderer arrowRenderer in spillArrowRenderers)
+            {
+                ToggleRendererGlow(arrowRenderer, Brightness.Dark);
+            }
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
+            {
+                ToggleGameObjGlow(hit.collider.gameObject, Brightness.Bright);
+            }
+        }
+    }
+
 	public bool GameOverCheck()
 	{
         if (numSidesCollapsed == (4 * ((numCols * 2) / 4 - 1)))
@@ -790,8 +961,17 @@ juicy.zSpillDir = zDirection;*/
 		public override void OnEnter()
 		{
             Debug.Log("SelectStack");
-            Context.stackSelected = false;
-            Context.startSpill = false;
+            if (Context.undoSpill)
+            {
+				Context.undoSpill = false;
+				Context.startSpill = false;
+            }
+            else
+            {
+                Context.undoSpill = false;
+                Context.stackSelected = false;
+                Context.startSpill = false;
+            }
 		}
 		public override void Update()
 		{
@@ -809,6 +989,7 @@ juicy.zSpillDir = zDirection;*/
 	{
 		public override void OnEnter()
 		{
+            
             Debug.Log("QueueSpill");
 			Services.Main.ConfirmUndoUI.SetActive(true);
             Context.finalizeSpill = false;
@@ -816,8 +997,11 @@ juicy.zSpillDir = zDirection;*/
 		}
 		public override void Update()
 		{
+            if(Context.undoSpill){
+                TransitionTo<SelectStack>();
+                return;
+            }
             if (!Context.finalizeSpill){
-                
             } else{
                 Context.CheckScoreAction();
                 TransitionTo<BoardFall>();
