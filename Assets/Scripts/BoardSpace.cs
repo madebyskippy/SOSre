@@ -44,8 +44,8 @@ public class BoardSpace : MonoBehaviour {
 	}
 
     public void AddTile(Tile tileToAdd, bool positionTile){
-		if (!isCenterSpace)
-		{
+		/*if (!isCenterSpace)
+		{*/
 
            // Debug.Log("before adding: "+colNum + ", " + rowNum + ": " + provisionalTileCount);
 			if (tileStack.Count > 0)
@@ -64,15 +64,17 @@ public class BoardSpace : MonoBehaviour {
 			tileStack.Add(tileToAdd);
 			tileToAdd.gameObject.layer = LayerMask.NameToLayer("TopTiles");
             //Debug.Log(colNum + ", " + rowNum + ": "+provisionalTileCount);
-		}
+		/*}
 		else
-		{
+		{*/
+            /*
+            //only do this on confirm
             centerColor = tileToAdd.color;
             GetComponent<MeshRenderer>().material = Services.Materials.TileMats[tileToAdd.color];
 			Destroy (tileToAdd.gameObject);
-            Services.BoardManager.centerSpaceChanged = true;
+            Services.BoardManager.centerSpaceChanged = true;*/
 
-		}
+		//}
     }
 
 	public void ResetTilesToPosition()

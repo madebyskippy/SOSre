@@ -578,9 +578,12 @@ public class BoardManager
         HighlightSpillArrow(ray);
     }
 
+   /* private void */
+
     public void ConfirmSpill()
     {
         finalizeSpill = true;
+
         ToggleTileGlow(tilesQueuedToSpill,Brightness.Normal);
     }
 
@@ -588,10 +591,6 @@ public class BoardManager
         undoSpill = true;
         spillUI.SetActive(true);
 
-
-
-
-        Debug.Log(tilesQueuedToSpill.Count);
         for (int i = 0; i < tilesQueuedToSpill.Count; ++i){
             Tile tile = tilesQueuedToSpill[i];
             tile.spaceQueuedToSpillOnto.tileStack.Remove(tile);
@@ -612,8 +611,6 @@ public class BoardManager
         spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
         spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
 
-
-        Debug.Log(tilesQueuedToSpill.Count);
     }
 
     private void QueueSpillHelper(BoardSpace toBeSpilled, int xDirection, int zDirection)
@@ -653,8 +650,6 @@ public class BoardManager
     public void QueueSpillAction()
     {
         QueueSpillHelper(spaceToSpill, spillDirectionX, spillDirectionZ);
-        // spaceToSpill.provisionalTileCount = 0;
-
     }
 
 
@@ -735,6 +730,19 @@ public class BoardManager
 
     public void CheckScoreAction(){
         //perhaps check score every time a new tile is placed in the center, to reward tall stacks.
+
+        for (int i = 0; i < centerSpaces.Count; ++i){
+            if (centerSpaces[i].tileStack.Count > 0)
+            {
+                centerSpaces[i].centerColor = centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color;
+                centerSpaces[i].GetComponent<MeshRenderer>().material = Services.Materials.TileMats[centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color];
+                Object.Destroy(centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].gameObject);
+                centerSpaces[i].tileStack.Clear();
+                centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
+                centerSpaceChanged = true;
+            }
+        }
+
 
         if (centerSpaceChanged)
         {
@@ -1024,13 +1032,25 @@ public class BoardManager
                 return;
             }
             if (Context.finalizeSpill){
-				Context.CheckScoreAction();
-				TransitionTo<BoardFall>();
+				//Context.CheckScoreAction();
+				TransitionTo<CheckScore>();
 				return;
             } else{
             }
 		}
 	}
+
+    private class CheckScore : Turn{
+        public override void OnEnter(){
+            Debug.Log("CheckScore");
+            Context.CheckScoreAction();
+
+        }
+        public override void Update(){
+            TransitionTo<BoardFall>();
+            return;
+        }
+    }
 
 	private class BoardFall : Turn //interim
 	{
