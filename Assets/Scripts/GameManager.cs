@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
 
 public class GameManager : MonoBehaviour {
 
@@ -46,6 +47,9 @@ public class GameManager : MonoBehaviour {
         Services.BoardData = new BoardData();
         Services.BoardManager = new BoardManager();
         Services.TurnManager = new TurnManager();
+
+        DOTween.Init();
+
 	}
 
 	void Reset(Reset e)

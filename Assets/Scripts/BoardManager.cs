@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using DG.Tweening;
+
 public class BoardManager
 {
 
@@ -53,6 +55,8 @@ public class BoardManager
     public LayerMask topTileLayer;
     public LayerMask invisPlane;*/
 
+    private Sequence tileFloatSequence;
+
 
     public enum Brightness {Bright,Dark,Normal}
 
@@ -66,6 +70,8 @@ public class BoardManager
         /*  spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
           topTileLayer = LayerMask.NameToLayer("TopTiles");
           invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
+
+
 
         mainBoard = GameObject.FindWithTag("Board");
         Services.Main.ConfirmUndoUI.SetActive(false);
@@ -253,9 +259,24 @@ public class BoardManager
     void SetupSpawnedTile(Tile tileToPlace)
     {
         tileToPlace.transform.SetParent(pivotPoint.transform);
-        tileToPlace.transform.localPosition = new Vector3(-5, 0, 0);
+        // tileToPlace.transform.localPosition = new Vector3(-5, 0, 0);
+        tileToPlace.transform.position = new Vector3(-10, 0, 0);
+        tileToPlace.transform.DOMove(new Vector3(-5, 0, 0), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
         tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
-        //juicyManager.spawnTileAnimation(tileToPlace.gameObject);
+		//juicyManager.spawnTileAnimation(tileToPlace.gameObject);
+
+
+        //setup floating sequence for the spawnedtile
+		tileFloatSequence = DOTween.Sequence();
+        tileFloatSequence.Append(tileToPlace.transform.DOMoveY(0.1f, 0.3f).SetEase(Ease.OutSine))
+                         .Append(tileToPlace.transform.DOMoveY(-0.1f, 0.3f).SetEase(Ease.OutSine))
+                         .Append(tileToPlace.transform.DOMoveY(0, 0.2f).SetEase(Ease.Linear));
+        tileFloatSequence.SetLoops(-1);
+
+    }
+
+    private void PlayFloatSequence(){
+		tileFloatSequence.Play();
     }
 
     BoardSpace CalculateSpaceFromLocation(Vector3 location)
@@ -366,9 +387,9 @@ public class BoardManager
 
     }
 
+
     public void SelectTileAction()
     {
-
         Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
         if (Input.GetMouseButtonDown(0))
         {
@@ -379,6 +400,7 @@ public class BoardManager
                 SetSpaceGlow(Brightness.Dark);
                 selectedTile = spawnedTile;
                 spawnedTile = null;
+                tileFloatSequence.Kill();
             }
         }
     }
@@ -393,7 +415,8 @@ public class BoardManager
             //{
             Vector3 pointOnBoard = hit.transform.position;
             selectedTile.transform.position = new Vector3(pointOnBoard.x, pointOnBoard.y + 0.2f, pointOnBoard.z);
-            selectedTile.transform.parent = null;
+            //selectedTile.transform.parent = null;
+            selectedTile.transform.parent = Services.Main.transform;
             tileInPosition = true;
             BoardSpace space = CalculateSpaceFromLocation(pointOnBoard);
             ToggleSpaceGlow(space, Brightness.Bright);
@@ -486,7 +509,6 @@ public class BoardManager
             if (stackSelected)
             {
                 //highlightspillarrow
-                //RaycastHit hit;
                 if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
                 {
                     spillDirectionX = 0;
@@ -509,23 +531,13 @@ public class BoardManager
                     }
 
                     startSpill = true;
-                    //spaceToSpill = selectedSpace;
 
                     spillUI.SetActive(false);
-                    //QueueSpill(selectedSpace, xDirection, zDirection);
-                    //StartCoroutine(ChangeModeToFinalizeSpill());
                     return;
-
                 }
                 else
                 {
                     startSpill = false;
-                    //mode = "Select Stack";
-                   /* if (selectedSpace != null)
-                    {
-                        ToggleTileGlow(selectedSpace.tileStack, Brightness.Normal);
-                    }*/
-                    //selectedSpace = null;
                 }
             }
 
@@ -562,10 +574,7 @@ public class BoardManager
                     spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
                 }
             }
-
         }
-
-
         HighlightSpillArrow(ray);
     }
 
@@ -575,25 +584,36 @@ public class BoardManager
         ToggleTileGlow(tilesQueuedToSpill,Brightness.Normal);
     }
 
-    public void UndoSpill(){
+    public void UndoSpill(){ 
         undoSpill = true;
         spillUI.SetActive(true);
 
-        spaceQueuedToSpillFrom.tileStack = tilesQueuedToSpill;
-        spaceQueuedToSpillFrom.ResetTilesToPosition();
 
-        foreach(Tile tile in tilesQueuedToSpill){
+
+
+        Debug.Log(tilesQueuedToSpill.Count);
+        for (int i = 0; i < tilesQueuedToSpill.Count; ++i){
+            Tile tile = tilesQueuedToSpill[i];
             tile.spaceQueuedToSpillOnto.tileStack.Remove(tile);
+
             if (tile.spaceQueuedToSpillOnto.tileStack.Count > 0)
             {
                 tile.spaceQueuedToSpillOnto.tileStack[tile.spaceQueuedToSpillOnto.tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("TopTiles");
             }
             tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
+            tile.spaceQueuedToSpillOnto = null;
+
 
         }
-        spaceQueuedToSpillFrom.provisionalTileCount = spaceQueuedToSpillFrom.tileStack.Count;
+		spaceQueuedToSpillFrom.tileStack = tilesQueuedToSpill;
+		spaceQueuedToSpillFrom.ResetTilesToPosition(); 
+		spaceQueuedToSpillFrom.provisionalTileCount = spaceQueuedToSpillFrom.tileStack.Count;
+        spaceToSpill.provisionalTileCount = spaceToSpill.tileStack.Count;
         spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
         spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
+
+
+        Debug.Log(tilesQueuedToSpill.Count);
     }
 
     private void QueueSpillHelper(BoardSpace toBeSpilled, int xDirection, int zDirection)
@@ -601,16 +621,15 @@ public class BoardManager
 
         int boardSpaceX = toBeSpilled.colNum;
         int boardSpaceZ = toBeSpilled.rowNum;
-        tilesQueuedToSpill = new List<Tile>();
-        int numTilesToMove = toBeSpilled.tileStack.Count;
-        /*totalSpillTime = Mathf.Max(totalSpillTime, numTilesToMove * 0.4f)
 
-juicy.delayTileSpill = 0f;
-juicy.xSpillDir = xDirection;
-juicy.zSpillDir = zDirection;*/
+        //get tiles that are queued to spill
+        tilesQueuedToSpill = new List<Tile>();
+
+        //the space to be spilled: how many tiles it got left
+        int numTilesToMove = toBeSpilled.tileStack.Count;
         toBeSpilled.provisionalTileCount = 0;
         spaceQueuedToSpillFrom = toBeSpilled;
-        //juicy.PositionStackToSpill(spaceToSpill);
+
 
         for (int i = 0; i < numTilesToMove; i++)
         {
@@ -628,7 +647,6 @@ juicy.zSpillDir = zDirection;*/
             toBeSpilled.tileStack.Remove(tileToMove);
             spaceToSpillOnto.AddTile(tileToMove, true);
 
-            //this isn't being added?
         }
     }
 
@@ -674,12 +692,12 @@ juicy.zSpillDir = zDirection;*/
             }
         }
 
-        List<List<Tile>> spillQueueList = new List<List<Tile>>();
+      //  List<List<Tile>> spillQueueList = new List<List<Tile>>();
 
         foreach (BoardSpace space in spacesToCollapse)
         {
             QueueSpillHelper(space, xDirection, zDirection);
-            spillQueueList.Add(tilesQueuedToSpill);
+            //spillQueueList.Add(tilesQueuedToSpill);
             //juicy.CollapseSideSpaces(space.gameObject, spacesToCollapse.Count);
 
             Object.Destroy(space.gameObject);
@@ -878,7 +896,10 @@ juicy.zSpillDir = zDirection;*/
         {
             foreach (Renderer arrowRenderer in spillArrowRenderers)
             {
-                ToggleRendererGlow(arrowRenderer, Brightness.Dark);
+                if (arrowRenderer != null)
+                {
+                    ToggleRendererGlow(arrowRenderer, Brightness.Dark);
+                }
             }
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
@@ -960,6 +981,7 @@ juicy.zSpillDir = zDirection;*/
 	{
 		public override void OnEnter()
 		{
+            Services.Main.ConfirmUndoUI.SetActive(false);
             Debug.Log("SelectStack");
             if (Context.undoSpill)
             {
@@ -991,7 +1013,7 @@ juicy.zSpillDir = zDirection;*/
 		{
             
             Debug.Log("QueueSpill");
-			Services.Main.ConfirmUndoUI.SetActive(true);
+			Services.Main.ConfirmUndoUI.SetActive(true); //insert this line OnComplete spill animation
             Context.finalizeSpill = false;
             Context.QueueSpillAction();
 		}
@@ -1001,11 +1023,11 @@ juicy.zSpillDir = zDirection;*/
                 TransitionTo<SelectStack>();
                 return;
             }
-            if (!Context.finalizeSpill){
+            if (Context.finalizeSpill){
+				Context.CheckScoreAction();
+				TransitionTo<BoardFall>();
+				return;
             } else{
-                Context.CheckScoreAction();
-                TransitionTo<BoardFall>();
-                return;
             }
 		}
 	}

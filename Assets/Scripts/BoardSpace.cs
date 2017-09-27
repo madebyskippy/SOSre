@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class BoardSpace : MonoBehaviour {
 
@@ -12,6 +13,7 @@ public class BoardSpace : MonoBehaviour {
 
     public List<Tile> tileStack;
     public int provisionalTileCount;
+
 
 	// Use this for initialization
 	void Start () {
@@ -32,9 +34,13 @@ public class BoardSpace : MonoBehaviour {
 
 	public void PositionNewTile(Tile tileToPosition)
 	{
-		//juicy.AnimateTileMove(tileToPosition, provisionalTileCount, transform.position);
+        //juicy.AnimateTileMove(tileToPosition, provisionalTileCount, transform.position);
         tileToPosition.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
-		//provisionalTileCount += 1;
+       /* tileToPosition.transform.DOMove(new Vector3(transform.position.x,
+                                                    provisionalTileCount * 0.2f + 0.1f,
+                                                    transform.position.z),
+                                       0.5f);*/
+        //provisionalTileCount += 1;
 	}
 
     public void AddTile(Tile tileToAdd, bool positionTile){
@@ -49,8 +55,10 @@ public class BoardSpace : MonoBehaviour {
 			}
 			if (positionTile)
 			{
-				tileToAdd.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
-			}
+                //tileToAdd.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
+                tileToAdd.transform.DOMove(new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z), 0.5f);
+
+            }
 
 			provisionalTileCount += 1;
 			tileStack.Add(tileToAdd);
@@ -59,12 +67,9 @@ public class BoardSpace : MonoBehaviour {
 		}
 		else
 		{
-            //color = tileToAdd.color;
             centerColor = tileToAdd.color;
-            //GameObject.FindWithTag("TurnManager").GetComponent<TurnManager>().scoringMode = true;
             GetComponent<MeshRenderer>().material = Services.Materials.TileMats[tileToAdd.color];
 			Destroy (tileToAdd.gameObject);
-			//juicy.TileSinkAnimation(tileToAdd.gameObject, transform.gameObject);
             Services.BoardManager.centerSpaceChanged = true;
 
 		}
@@ -72,6 +77,7 @@ public class BoardSpace : MonoBehaviour {
 
 	public void ResetTilesToPosition()
 	{
+        tileStack.Reverse();
 		for (int i = 0; i < tileStack.Count; i++)
         {
 			Tile tile = tileStack[i];
@@ -91,5 +97,8 @@ public class BoardSpace : MonoBehaviour {
             }
 		}
 	}
+
+
+ 
 
 }
