@@ -43,38 +43,24 @@ public class BoardSpace : MonoBehaviour {
         //provisionalTileCount += 1;
 	}
 
-    public void AddTile(Tile tileToAdd, bool positionTile){
-		/*if (!isCenterSpace)
-		{*/
+    public void AddTile(Tile tileToAdd, bool positionTile)
+    {
+        if (tileStack.Count > 0)
+        {
+            tileStack[tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("Default");
 
-           // Debug.Log("before adding: "+colNum + ", " + rowNum + ": " + provisionalTileCount);
-			if (tileStack.Count > 0)
-			{
-				tileStack[tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("Default");
+        }
+        if (positionTile)
+        {
+            tileToAdd.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
+            //tileToAdd.transform.DOMove(new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z), 0.5f);
 
-			}
-			if (positionTile)
-			{
-                //tileToAdd.transform.position = new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z);
-                tileToAdd.transform.DOMove(new Vector3(transform.position.x, provisionalTileCount * 0.2f + 0.1f, transform.position.z), 0.5f);
+        }
 
-            }
+        provisionalTileCount += 1;
+        tileStack.Add(tileToAdd);
+        tileToAdd.gameObject.layer = LayerMask.NameToLayer("TopTiles");
 
-			provisionalTileCount += 1;
-			tileStack.Add(tileToAdd);
-			tileToAdd.gameObject.layer = LayerMask.NameToLayer("TopTiles");
-            //Debug.Log(colNum + ", " + rowNum + ": "+provisionalTileCount);
-		/*}
-		else
-		{*/
-            /*
-            //only do this on confirm
-            centerColor = tileToAdd.color;
-            GetComponent<MeshRenderer>().material = Services.Materials.TileMats[tileToAdd.color];
-			Destroy (tileToAdd.gameObject);
-            Services.BoardManager.centerSpaceChanged = true;*/
-
-		//}
     }
 
 	public void ResetTilesToPosition()

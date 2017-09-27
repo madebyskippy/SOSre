@@ -56,6 +56,7 @@ public class BoardManager
     public LayerMask invisPlane;*/
 
     private Sequence tileFloatSequence;
+    private Sequence tileSpillSequence;
 
 
     public enum Brightness {Bright,Dark,Normal}
@@ -376,6 +377,7 @@ public class BoardManager
         }
     }
 
+
     public void SpawnTileAction()
     {
 
@@ -628,6 +630,8 @@ public class BoardManager
         spaceQueuedToSpillFrom = toBeSpilled;
 
 
+		tileSpillSequence = DOTween.Sequence();
+
         for (int i = 0; i < numTilesToMove; i++)
         {
             //toBeSpilled.provisionalTileCount = 0;
@@ -642,9 +646,25 @@ public class BoardManager
 
             toBeSpilled.PositionNewTile(tileToMove);
             toBeSpilled.tileStack.Remove(tileToMove);
-            spaceToSpillOnto.AddTile(tileToMove, true);
+
+            // ANIMATE SPILL
+
+            tileSpillSequence.Append(
+                /*tileToMove.transform.DOMove(new Vector3(
+					spaceToSpillOnto.transform.position.x,
+					spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
+					spaceToSpillOnto.transform.position.z), 0.3f)*/
+                tileToMove.transform.DOJump(new Vector3(
+                    spaceToSpillOnto.transform.position.x,
+                    spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
+                    spaceToSpillOnto.transform.position.z), 2f, 1, 0.3f, false)
+            );
+            spaceToSpillOnto.AddTile(tileToMove, false);
 
         }
+        tileSpillSequence.OnComplete(OnCompleteSpillAnimation);
+		tileSpillSequence.Play();
+
     }
 
     public void QueueSpillAction()
@@ -652,7 +672,10 @@ public class BoardManager
         QueueSpillHelper(spaceToSpill, spillDirectionX, spillDirectionZ);
     }
 
+    private void OnCompleteSpillAnimation(){
 
+		Services.Main.ConfirmUndoUI.SetActive(true); 
+	}
 
     public void BoardFallAction()
     {
@@ -1021,7 +1044,7 @@ public class BoardManager
 		{
             
             Debug.Log("QueueSpill");
-			Services.Main.ConfirmUndoUI.SetActive(true); //insert this line OnComplete spill animation
+			//Services.Main.ConfirmUndoUI.SetActive(true); //insert this line OnComplete spill animation
             Context.finalizeSpill = false;
             Context.QueueSpillAction();
 		}
