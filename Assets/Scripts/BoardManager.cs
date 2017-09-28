@@ -75,8 +75,8 @@ public class BoardManager
           topTileLayer = LayerMask.NameToLayer("TopTiles");
           invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
 
-
-
+        score = 0;
+        numSidesCollapsed = 0;
         mainBoard = GameObject.FindWithTag("Board");
         Services.Main.ConfirmUndoUI.SetActive(false);
 
@@ -748,8 +748,9 @@ public class BoardManager
                 currentHighestRowIndex -= 1;
             }
         }
-
-        highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count;
+      //  Debug.Log("before highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count");
+        highestStackIndexInSpacesToCollapse = 0;
+      //  Debug.Log("after highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count;");
         for (int i = 1; i < spacesToCollapse.Count; ++i)
         {
             if (spacesToCollapse[highestStackIndexInSpacesToCollapse].tileStack.Count < spacesToCollapse[i].tileStack.Count)
@@ -796,6 +797,7 @@ public class BoardManager
                 centerSpaces[i].tileStack.Clear();
                 centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
                 centerSpaceChanged = true;
+
             }
         }
 
@@ -828,6 +830,7 @@ public class BoardManager
             }
             if (colorred && colorblue && coloryellow && colorgreen)
             {
+                Debug.Log(score);
                 score += 1;
                 //scoring = true;
                 //juicy.ScoreAnimation();
