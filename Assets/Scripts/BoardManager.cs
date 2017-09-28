@@ -28,6 +28,7 @@ public class BoardManager
     public bool undoSpill;
 
     public int rotationIndex;
+    private float tileSpillIndivDuration = 0.4f;
 
     public GameObject pivotPoint;
 
@@ -40,23 +41,25 @@ public class BoardManager
     public BoardSpace spaceToSpill;
 
     public int numSidesCollapsed;
+    private int highestStackIndexInSpacesToCollapse;
 
     private int spillDirectionX, spillDirectionZ;
 
     public bool stackSelected;
     public bool startSpill;
     public bool finalizeSpill;
+    public bool boardFalling;
+    public bool lastTileInBoardFall;
+    public bool boardFinishedFalling;
 
     public bool tileInPosition;
     public int sideAboutToCollapse;
 
     public BoardSpace highlightedSpace;
-    /*public LayerMask spawnedTileLayer;
-    public LayerMask topTileLayer;
-    public LayerMask invisPlane;*/
 
     private Sequence tileFloatSequence;
-    private Sequence tileSpillSequence;
+
+
 
 
     public enum Brightness {Bright,Dark,Normal}
@@ -630,7 +633,9 @@ public class BoardManager
         spaceQueuedToSpillFrom = toBeSpilled;
 
 
-		tileSpillSequence = DOTween.Sequence();
+		Sequence tileSpillSequence = DOTween.Sequence();
+
+        int maxStackHeight = 1;
 
         for (int i = 0; i < numTilesToMove; i++)
         {
@@ -644,25 +649,55 @@ public class BoardManager
             BoardSpace spaceToSpillOnto = board[boardSpaceX, boardSpaceZ];
             tileToMove.spaceQueuedToSpillOnto = spaceToSpillOnto;
 
-            toBeSpilled.PositionNewTile(tileToMove);
+            //toBeSpilled.PositionNewTile(tileToMove);
             toBeSpilled.tileStack.Remove(tileToMove);
 
             // ANIMATE SPILL
 
+            if (spaceToSpillOnto.tileStack.Count > maxStackHeight)
+            {
+                maxStackHeight = spaceToSpillOnto.tileStack.Count;
+            }
+            float jumpHeight = maxStackHeight;
+            if(maxStackHeight > 1){
+                jumpHeight *= 0.65f;
+            }
             tileSpillSequence.Append(
-                /*tileToMove.transform.DOMove(new Vector3(
-					spaceToSpillOnto.transform.position.x,
-					spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
-					spaceToSpillOnto.transform.position.z), 0.3f)*/
                 tileToMove.transform.DOJump(new Vector3(
                     spaceToSpillOnto.transform.position.x,
                     spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
-                    spaceToSpillOnto.transform.position.z), 2f, 1, 0.3f, false)
+                    spaceToSpillOnto.transform.position.z), jumpHeight,
+                                            1, tileSpillIndivDuration, false)
             );
+
+            Vector3 rotateTileVector = new Vector3(0, 0, 0);
+            if(xDirection == 0 && zDirection == 1){ //up
+                rotateTileVector = new Vector3(180, 0, 0);
+            } else if(xDirection == 0 && zDirection == -1){ // down
+                rotateTileVector = new Vector3(-180, 0, 0);
+			} else if (xDirection == -1 && zDirection == 0){ // left
+				rotateTileVector = new Vector3(0, 0, 180);
+			} else if (xDirection == 1 && zDirection == 0){ // right
+				rotateTileVector = new Vector3(0, 0, -180);
+			}
+            tileToMove.transform.localRotation = Quaternion.identity;
+
+            tileSpillSequence.Insert(tileSpillIndivDuration*i,
+                                     tileToMove.transform.DORotate(rotateTileVector, tileSpillIndivDuration, RotateMode.LocalAxisAdd));
+
+
             spaceToSpillOnto.AddTile(tileToMove, false);
 
         }
-        tileSpillSequence.OnComplete(OnCompleteSpillAnimation);
+        if (!boardFalling)
+        {
+            tileSpillSequence.OnComplete(OnCompleteSpillAnimation);
+        }
+
+        if(lastTileInBoardFall){
+            tileSpillSequence.OnComplete(OnCompleteSpillAnimationForLastTile);
+        }
+
 		tileSpillSequence.Play();
 
     }
@@ -673,9 +708,13 @@ public class BoardManager
     }
 
     private void OnCompleteSpillAnimation(){
-
-		Services.Main.ConfirmUndoUI.SetActive(true); 
+        Services.Main.ConfirmUndoUI.SetActive(true);
 	}
+
+    private void OnCompleteSpillAnimationForLastTile(){
+        boardFinishedFalling = true;
+    }
+
 
     public void BoardFallAction()
     {
@@ -710,42 +749,32 @@ public class BoardManager
             }
         }
 
-      //  List<List<Tile>> spillQueueList = new List<List<Tile>>();
-
-        foreach (BoardSpace space in spacesToCollapse)
+        highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count;
+        for (int i = 1; i < spacesToCollapse.Count; ++i)
         {
-            QueueSpillHelper(space, xDirection, zDirection);
-            //spillQueueList.Add(tilesQueuedToSpill);
-            //juicy.CollapseSideSpaces(space.gameObject, spacesToCollapse.Count);
-
-            Object.Destroy(space.gameObject);
-
+            if (spacesToCollapse[highestStackIndexInSpacesToCollapse].tileStack.Count < spacesToCollapse[i].tileStack.Count)
+                highestStackIndexInSpacesToCollapse = i;
         }
 
-        /*
-        Debug.Log("resetting the board spaces spilled onto");
-		for (int i = 0; i < spacesToCollapse.Count; i++)
+        for (int s = 0; s < spacesToCollapse.Count; ++s){
+            if(s == highestStackIndexInSpacesToCollapse){
+                lastTileInBoardFall = true;
+            } else {
+                lastTileInBoardFall = false;
+            }
+            QueueSpillHelper(spacesToCollapse[s], xDirection, zDirection);
+        }
+
+		for (int j = spacesToCollapse.Count - 1; j >= 0; --j)
 		{
-            foreach (Tile tile in spillQueueList[i])
-			{
-				spaceQueuedToSpillFrom.tileStack.Remove(tile);
-			}
-
-			foreach (Tile tile in spillQueueList[i])
-			{
-                tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
-                tile.spaceQueuedToSpillOnto.AddTile(tile, false);
-               //tile.spaceQueuedToSpillOnto.provisionalTileCount = tile.spaceQueuedToSpillOnto.tileStack.Count;
-			}
-		}*/
-
+            if (spacesToCollapse[j] != null)
+            {
+                Object.Destroy(spacesToCollapse[j].gameObject);
+            }
+		}
 
         sideAboutToCollapse = (sideAboutToCollapse + 1) % 4;
         numSidesCollapsed++;
-
-        /*    foreach(BoardSpace bs in sideSpaces){
-                Object.Destroy(bs.gameObject);
-            }*/
 
 
 
@@ -759,7 +788,11 @@ public class BoardManager
             {
                 centerSpaces[i].centerColor = centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color;
                 centerSpaces[i].GetComponent<MeshRenderer>().material = Services.Materials.TileMats[centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color];
-                Object.Destroy(centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].gameObject);
+                //Object.Destroy(centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].gameObject);
+ 
+                for (int j = centerSpaces[i].tileStack.Count - 1; j >= 0; --j){
+                    Object.Destroy(centerSpaces[i].tileStack[j].gameObject);
+                }
                 centerSpaces[i].tileStack.Clear();
                 centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
                 centerSpaceChanged = true;
@@ -958,6 +991,9 @@ public class BoardManager
 		public override void OnEnter()
 		{
             Debug.Log("SpawnTile");
+            Context.boardFinishedFalling = false;
+            Context.lastTileInBoardFall = false;
+            Context.boardFalling = false;
             Services.Main.ConfirmUndoUI.SetActive(false);
             Context.SpawnTileAction();
 		}
@@ -1055,52 +1091,46 @@ public class BoardManager
                 return;
             }
             if (Context.finalizeSpill){
-				//Context.CheckScoreAction();
-				TransitionTo<CheckScore>();
+                //Context.CheckScoreAction();
+                Context.CheckScoreAction();
+				TransitionTo<BoardFall>();
 				return;
             } else{
             }
 		}
 	}
 
-    private class CheckScore : Turn{
-        public override void OnEnter(){
-            Debug.Log("CheckScore");
-            Context.CheckScoreAction();
-
-        }
-        public override void Update(){
-            TransitionTo<BoardFall>();
-            return;
-        }
-    }
-
-	private class BoardFall : Turn //interim
-	{
-		public override void OnEnter()
-		{
+    private class BoardFall : Turn //interim
+    {
+        public override void OnEnter()
+        {
             Debug.Log("BoardFall");
+            Context.boardFalling = true;
             Services.Main.ConfirmUndoUI.SetActive(false);
             Context.BoardFallAction();
 
-			//Context. ___
-		}
-		public override void Update()
-		{
-            Context.CheckScoreAction();
+            //Context. ___
+        }
+        public override void Update()
+        {
+            if (Context.boardFinishedFalling)
+            {
+                Context.CheckScoreAction();
+                if (Context.GameOverCheck())
+                {
+                    TransitionTo<GameOver>();
+                    return;
+                }
+                else
+                {
+                    TransitionTo<SpawnTile>();
+                    return;
+                }
+            }
+        }
 
-            if (Context.GameOverCheck())
-            {
-                TransitionTo<GameOver>();
-                return;
-            }
-            else
-            {
-                TransitionTo<SpawnTile>();
-                return;
-            }
-		}
 	}
+
 
 /*	private class FinalizeSpill : Turn
 	{
