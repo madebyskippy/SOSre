@@ -766,19 +766,35 @@ public class BoardManager
             QueueSpillHelper(spacesToCollapse[s], xDirection, zDirection);
         }
 
-		for (int j = spacesToCollapse.Count - 1; j >= 0; --j)
-		{
-            if (spacesToCollapse[j] != null)
+        Sequence boardCollapseSequence = DOTween.Sequence();
+        for (int b = 0; b < spacesToCollapse.Count; ++b){
+            if (b > 0)
             {
-                Object.Destroy(spacesToCollapse[j].gameObject);
+                boardCollapseSequence.Insert(b*0.2f,spacesToCollapse[b].transform.DOMoveY(-10f, 1f));
             }
-		}
+            else
+            {
+                boardCollapseSequence.Append(spacesToCollapse[b].transform.DOMoveY(-10f, 1f));
+            }
+        }
+
+        boardCollapseSequence.OnComplete(() => OnCompleteBoardFall(spacesToCollapse));
 
         sideAboutToCollapse = (sideAboutToCollapse + 1) % 4;
         numSidesCollapsed++;
 
 
 
+    }
+
+    private void OnCompleteBoardFall(List<BoardSpace> spaces){
+		for (int j = spaces.Count - 1; j >= 0; --j)
+		{
+			if (spaces[j] != null)
+			{
+				Object.Destroy(spaces[j].gameObject);
+			}
+		}
     }
 
     public void CheckScoreAction(){
@@ -830,7 +846,6 @@ public class BoardManager
             }
             if (colorred && colorblue && coloryellow && colorgreen)
             {
-                Debug.Log(score);
                 score += 1;
                 //scoring = true;
                 //juicy.ScoreAnimation();
@@ -1134,18 +1149,6 @@ public class BoardManager
 
 	}
 
-
-/*	private class FinalizeSpill : Turn
-	{
-		public override void OnEnter()
-		{
-			//Context. ___
-		}
-		public override void Update()
-		{
-
-		}
-	}*/
 
 	private class GameOver : Turn
 	{
