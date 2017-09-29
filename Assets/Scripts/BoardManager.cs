@@ -175,7 +175,7 @@ public class BoardManager
     private void CreateBoardSpace(int colNum, int rowNum, int color)
     {
         Vector3 location = new Vector3(colNum - numCols / 2 + 0.5f, 0, rowNum - numRows / 2 + 0.5f);
-        GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.LookRotation(Vector3.down)) as GameObject;
+        GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.identity) as GameObject;
         boardSpace.transform.SetParent(mainBoard.transform);
         boardSpace.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[color];
         boardSpace.GetComponent<BoardSpace>().SetBoardSpace(color, colNum, rowNum);
