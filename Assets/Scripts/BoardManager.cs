@@ -28,7 +28,7 @@ public class BoardManager
     public bool undoSpill;
 
     public int rotationIndex;
-    private float tileSpillIndivDuration = 0.4f;
+    private float tileSpillIndivDuration = 0.5f;
 
     public GameObject pivotPoint;
 
@@ -718,6 +718,9 @@ public class BoardManager
 
     public void BoardFallAction()
     {
+        //Services.GameManager.currentCamera.GetComponent<CameraManager>().DoShake();
+        Services.GameManager.currentCamera.DOShakePosition(0.3f, 0.5f,13,90,true);
+
         List<BoardSpace> spacesToCollapse = GetSpaceListFromSideNum();
 
         int[] coords = GetDirectionFromSideNum();
@@ -748,9 +751,7 @@ public class BoardManager
                 currentHighestRowIndex -= 1;
             }
         }
-      //  Debug.Log("before highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count");
         highestStackIndexInSpacesToCollapse = 0;
-      //  Debug.Log("after highestStackIndexInSpacesToCollapse = spacesToCollapse[0].tileStack.Count;");
         for (int i = 1; i < spacesToCollapse.Count; ++i)
         {
             if (spacesToCollapse[highestStackIndexInSpacesToCollapse].tileStack.Count < spacesToCollapse[i].tileStack.Count)
@@ -782,8 +783,6 @@ public class BoardManager
 
         sideAboutToCollapse = (sideAboutToCollapse + 1) % 4;
         numSidesCollapsed++;
-
-
 
     }
 
