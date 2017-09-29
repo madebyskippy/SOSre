@@ -51,6 +51,8 @@ public class BoardManager
     public bool boardFalling;
     public bool lastTileInBoardFall;
     public bool boardFinishedFalling;
+    public bool finishedCheckingScore;
+    private bool scoreAnimationStarted;
 
     public bool tileInPosition;
     public int sideAboutToCollapse;
@@ -796,9 +798,11 @@ public class BoardManager
 		}
     }
 
-    public void CheckScoreAction(){
-        //perhaps check score every time a new tile is placed in the center, to reward tall stacks.
+   // private void 
 
+    public void CheckScoreAction(){
+        Debug.Log("Enter CheckScoreAction");
+        //perhaps check score every time a new tile is placed in the center, to reward tall stacks.
         for (int i = 0; i < centerSpaces.Count; ++i){
             if (centerSpaces[i].tileStack.Count > 0)
             {
@@ -807,7 +811,9 @@ public class BoardManager
                 //Object.Destroy(centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].gameObject);
  
                 for (int j = centerSpaces[i].tileStack.Count - 1; j >= 0; --j){
-                    Object.Destroy(centerSpaces[i].tileStack[j].gameObject);
+                    // Object.Destroy(centerSpaces[i].tileStack[j].gameObject);
+                    centerSpaces[i].tileStack[j].transform.DOMoveY(0, 0.3f);
+                    centerSpaces[i].tileStack[j].transform.DOScaleY(0, 0.3f);
                 }
                 centerSpaces[i].tileStack.Clear();
                 centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
@@ -819,45 +825,68 @@ public class BoardManager
 
         if (centerSpaceChanged)
         {
-            bool colorred = false;
-            bool colorblue = false;
-            bool coloryellow = false;
-            bool colorgreen = false;
-            foreach (BoardSpace bs in centerSpaces)
+            if (!scoreAnimationStarted)
             {
-                int color = bs.centerColor;
-                switch (color)
+                Debug.Log("enter centerSpaceChanged");
+                bool colorred = false;
+                bool colorblue = false;
+                bool coloryellow = false;
+                bool colorgreen = false;
+                foreach (BoardSpace bs in centerSpaces)
                 {
-                    case 0:
-                        colorred = true;
-                        break;
-                    case 1:
-                        colorgreen = true;
-                        break;
-                    case 2:
-                        colorblue = true;
-                        break;
-                    case 3:
-                        coloryellow = true;
-                        break;
+                    int color = bs.centerColor;
+                    switch (color)
+                    {
+                        case 0:
+                            colorred = true;
+                            break;
+                        case 1:
+                            colorgreen = true;
+                            break;
+                        case 2:
+                            colorblue = true;
+                            break;
+                        case 3:
+                            coloryellow = true;
+                            break;
+                    }
+
                 }
 
-            }
-            if (colorred && colorblue && coloryellow && colorgreen)
-            {
-                score += 1;
-                //scoring = true;
-                //juicy.ScoreAnimation();
-                /*GameObject pre = Instantiate(scorePrefab,
-                    new Vector3(scorePrefab.transform.position.x + 45f * (score - 1), scorePrefab.transform.position.y, scorePrefab.transform.position.z),
-                    Quaternion.identity) as GameObject;
-                pre.transform.SetParent(GameObject.FindWithTag("ScoreSymbolsGroup").transform, false);
-                pre.GetComponent<Animator>().SetTrigger("actualEntry");*/
-                Services.Main.Score.text = "SCORE: " + score;
+                Sequence scoringSequence = DOTween.Sequence();
+                if (colorred && colorblue && coloryellow && colorgreen)
+                {
+                    Debug.Log("enter scoring");
+                    scoringSequence.AppendInterval(0.5f);
+                    for (int i = 0; i < centerSpaces.Count; ++i)
+                    {
+                        scoringSequence.Append(centerSpaces[i].transform.DOPunchScale(new Vector3(0, Random.Range(80,120), 0), 0.35f, 1, 1));
+                    }
+                    scoringSequence.AppendInterval(0.6f); //score wait time
+                    scoringSequence.OnComplete(OnCompleteScoringSequence);
+                    scoringSequence.Play();
+                    scoreAnimationStarted = true;
+                    score += 1;
+                    Services.Main.Score.text = "SCORE: " + score;
+                }
+                else
+                {
+                    Debug.Log("enter not scoring");
+                    finishedCheckingScore = true;
+                    centerSpaceChanged = false;
+                }
             }
 
-            centerSpaceChanged = false;
+        } else {
+            Debug.Log("enter center space not changed");
+            finishedCheckingScore = true;
         }
+    }
+
+    private void OnCompleteScoringSequence(){
+        finishedCheckingScore = true;
+        scoreAnimationStarted = false;
+		centerSpaceChanged = false;
     }
 
     public void ToggleTileGlow(List<Tile> tiles, Brightness brightness){
@@ -1108,14 +1137,18 @@ public class BoardManager
                 return;
             }
             if (Context.finalizeSpill){
-                //Context.CheckScoreAction();
+
                 Context.CheckScoreAction();
-				TransitionTo<BoardFall>();
-				return;
-            } else{
-            }
+                if (Context.finishedCheckingScore)
+                {
+                    Context.finishedCheckingScore = false;
+                    TransitionTo<BoardFall>();
+                    return;
+                }
+            } 
 		}
 	}
+
 
     private class BoardFall : Turn //interim
     {
@@ -1132,17 +1165,23 @@ public class BoardManager
         {
             if (Context.boardFinishedFalling)
             {
-                Context.CheckScoreAction();
-                if (Context.GameOverCheck())
+
+				Context.CheckScoreAction();
+                if (Context.finishedCheckingScore)
                 {
-                    TransitionTo<GameOver>();
-                    return;
+                    Context.finishedCheckingScore = false;
+                    if (Context.GameOverCheck())
+                    {
+                        TransitionTo<GameOver>();
+                        return;
+                    }
+                    else
+                    {
+                        TransitionTo<SpawnTile>();
+                        return;
+                    }
                 }
-                else
-                {
-                    TransitionTo<SpawnTile>();
-                    return;
-                }
+
             }
         }
 
