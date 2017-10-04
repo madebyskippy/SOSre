@@ -12,21 +12,6 @@ public class MaterialDB : ScriptableObject {
     private Shader[] highlightShaders;
     public Shader[] HighlightShaders { get { return highlightShaders; }}
 
-  /*  [SerializeField]
-    private Material tileMatY;
-    public Material TileMatY { get { return tileMatY; }}
-
-	[SerializeField]
-	private Material tileMatB;
-	public Material TileMatB { get { return tileMatB; } }
-
-	[SerializeField]
-	private Material tileMatG;
-	public Material TileMatG { get { return tileMatG; } }
-
-	[SerializeField]
-	private Material tileMatR;
-	public Material TileMatR { get { return tileMatR; } }*/
 
     [SerializeField]
     private Material[] boardMats;

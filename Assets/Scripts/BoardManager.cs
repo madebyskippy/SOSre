@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+//using System.Diagnostics;
 
 using DG.Tweening;
 
@@ -45,23 +46,37 @@ public class BoardManager
 
     private int spillDirectionX, spillDirectionZ;
 
-    public bool stackSelected;
-    public bool startSpill;
-    public bool finalizeSpill;
-    public bool boardFalling;
-    public bool lastTileInBoardFall;
-    public bool boardFinishedFalling;
-    public bool finishedCheckingScore;
-    private bool scoreAnimationStarted;
+    public bool boardFinishedEntering = false;
+    public bool stackSelected = false;
+    public bool startSpill = false;
+    public bool finalizeSpill = false;
+    public bool boardFalling = false;
+    public bool lastTileInBoardFall = false;
+    public bool boardFinishedFalling = false;
+    public bool finishedCheckingScore = false;
+    private bool scoreAnimationStarted = false;
 
-    public bool tileInPosition;
+    public bool tileInPosition = false;
     public int sideAboutToCollapse;
 
     public BoardSpace highlightedSpace;
 
+    private List<Tile> initialTilesOnBoard;
+
     private Sequence tileFloatSequence;
+    private Sequence boardCollapseSequence;
 
+    private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
+    private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
 
+   /* public string MyValue{
+        set {
+            if(this.location != oneLocation){
+                Debugger.Break();
+                this.location = oneLocation;
+            }
+        }
+    }*/
 
 
     public enum Brightness {Bright,Dark,Normal}
@@ -73,9 +88,6 @@ public class BoardManager
 
     public void InitializeBoard()
     {
-        /*  spawnedTileLayer = LayerMask.NameToLayer("DrawnTile");
-          topTileLayer = LayerMask.NameToLayer("TopTiles");
-          invisPlane = LayerMask.NameToLayer("InvisBoardPlane");*/
 
         score = 0;
         numSidesCollapsed = 0;
@@ -96,21 +108,24 @@ public class BoardManager
         currentHighestColIndex = numCols - 1;
 
         rotationIndex = 0;
+        initialTilesOnBoard = new List<Tile>();
 
         if (Services.BoardData.randomTiles)
         {
-            for (int i = 0; i < numCols; i++)
+            for (int b = 0; b < 2; b++)
             {
-                for (int j = 0; j < numRows; j++)
+                for (int i = 0; i < numCols; i++)
                 {
-                    if ((!IsCentered(i, numCols) && IsEdge(j, numRows)) || (!IsCentered(j, numRows) && IsEdge(i, numCols)))
+                    for (int j = 0; j < numRows; j++)
                     {
-                        Tile firstTileToPlace;
-                        Tile secondTileToPlace;
-                        firstTileToPlace = DrawTile();
-                        secondTileToPlace = DrawTile();
-                        board[i, j].AddTile(firstTileToPlace, true);
-                        board[i, j].AddTile(secondTileToPlace, true);
+                        if ((!IsCentered(i, numCols) && IsEdge(j, numRows)) || (!IsCentered(j, numRows) && IsEdge(i, numCols)))
+                        {
+                            Tile tileToPlace;
+                            tileToPlace = DrawTile();
+                            board[i, j].AddTile(tileToPlace, true);
+                            tileToPlace.GetComponent<MeshRenderer>().enabled = false;
+                            initialTilesOnBoard.Add(tileToPlace);
+                        }
                     }
                 }
             }
@@ -123,9 +138,8 @@ public class BoardManager
         }
 
 
-
         fsm = new FSM<BoardManager>(this);
-        fsm.TransitionTo<SpawnTile>();
+        fsm.TransitionTo<EnterBoard>();
 
     }
 
@@ -161,6 +175,44 @@ public class BoardManager
 
     }
 
+    public void AnimateEnterBoard()
+    {
+        Vector3[,] targetLocations = new Vector3[numCols, numRows];
+        Sequence boardSequence = DOTween.Sequence();
+
+        for (int i = 0; i < numCols; ++i)
+        {
+            for (int j = 0; j < numRows; ++j)
+            {
+                // targetLocations[i, j] = board[i, j].transform.position;
+                Vector3 targetLocation = board[i, j].transform.position;
+                board[i, j].transform.position = new Vector3(targetLocation.x, -10f, targetLocation.z);
+                board[i, j].GetComponent<MeshRenderer>().enabled = true;
+                boardSequence.Insert(0.07f * (j + i * numRows), board[i, j].transform.DOMoveY(targetLocation.y, 0.6f).SetEase(Ease.InOutBack));
+            }
+        }
+
+        Sequence tileSequence = DOTween.Sequence();
+        for (int t = 0; t < initialTilesOnBoard.Count; ++t)
+        {
+            Vector3 targetLocation = initialTilesOnBoard[t].transform.position;
+            initialTilesOnBoard[t].transform.position = new Vector3(targetLocation.x, 10f, targetLocation.z);
+            initialTilesOnBoard[t].GetComponent<MeshRenderer>().enabled = true;
+            boardSequence.Insert((0.07f * t) + 2f, initialTilesOnBoard[t].transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear));
+        }
+    
+
+		boardSequence.OnComplete(OnCompleteEnterBoard);
+		boardSequence.Play();
+
+        //boardSequence.Append
+
+    }
+
+    private void OnCompleteEnterBoard(){
+        boardFinishedEntering = true;
+    }
+
     public bool IsCentered(int index, int sideLength)
     {
         bool centered = (index == sideLength / 2 - 1) || (index == sideLength / 2);
@@ -180,7 +232,10 @@ public class BoardManager
         GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.identity) as GameObject;
         boardSpace.transform.SetParent(mainBoard.transform);
         boardSpace.GetComponent<MeshRenderer>().material = Services.Materials.BoardMats[color];
-        boardSpace.GetComponent<BoardSpace>().SetBoardSpace(color, colNum, rowNum);
+		boardSpace.GetComponent<MeshRenderer>().enabled = false; //temporarily invisible for animation
+
+		boardSpace.GetComponent<BoardSpace>().SetBoardSpace(color, colNum, rowNum);
+ 
         if (IsCentered(colNum, numCols) && IsCentered(rowNum, numRows))
         {
             boardSpace.GetComponent<BoardSpace>().isCenterSpace = true;
@@ -265,11 +320,9 @@ public class BoardManager
     void SetupSpawnedTile(Tile tileToPlace)
     {
         tileToPlace.transform.SetParent(pivotPoint.transform);
-        // tileToPlace.transform.localPosition = new Vector3(-5, 0, 0);
         tileToPlace.transform.position = new Vector3(-10, 0, 0);
         tileToPlace.transform.DOMove(new Vector3(-5, 0, 0), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
         tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
-		//juicyManager.spawnTileAnimation(tileToPlace.gameObject);
 
 
         //setup floating sequence for the spawnedtile
@@ -329,6 +382,17 @@ public class BoardManager
         return spaceList;
     }
 
+    private bool IsGoingOverEdge(int x, int z, int xDirection, int zDirection){
+        int targetX = x + xDirection;
+        int targetZ = z + zDirection;
+        if(targetX > currentHighestColIndex || targetX < currentLowestColIndex
+           || targetZ > currentHighestRowIndex || targetZ < currentLowestRowIndex){
+            return true;
+        }
+        return false;
+
+    }
+
     int[] CalculateAdjacentSpace(int x, int z, int xDirection, int zDirection)
     {
         int[] coords = new int[2];
@@ -369,6 +433,32 @@ public class BoardManager
             coords[1] = sideAboutToCollapse - 2;
         }
         return coords;
+    }
+
+    Vector3[] BeyondEitherEdges(int x, int z, int xDirection, int zDirection){
+        //index 0 = first stop, index 1 = the other side
+        Vector3[] targetLocs = new Vector3[2];
+        if(xDirection > 0){ //going up
+
+            targetLocs[0] = board[currentHighestColIndex, z].transform.position + new Vector3(1, 0, 0);
+            targetLocs[1] = board[currentLowestColIndex, z].transform.position + new Vector3(-1, 0, 0);
+        } else if(xDirection < 0){ //going down
+
+            targetLocs[0] = board[currentLowestColIndex, z].transform.position + new Vector3(-1, 0, 0);
+            targetLocs[1] = board[currentHighestColIndex, z].transform.position + new Vector3(1, 0, 0);
+        }
+
+        if(zDirection > 0) { //going left
+
+            targetLocs[0] = board[x, currentHighestRowIndex].transform.position + new Vector3(0, 0, 1);
+            targetLocs[1] = board[x, currentLowestRowIndex].transform.position + new Vector3(0, 0, -1);
+        } else if(zDirection < 0){ //going right
+
+            targetLocs[0] = board[x, currentLowestRowIndex].transform.position + new Vector3(0, 0, -1);
+            targetLocs[1] = board[x, currentHighestRowIndex].transform.position + new Vector3(0, 0, 1);
+        }
+
+        return targetLocs;
     }
 
     private void IndicateCollapsibleSide()
@@ -636,63 +726,103 @@ public class BoardManager
 
 
 		Sequence tileSpillSequence = DOTween.Sequence();
+        tileSpillSequence.Pause(); //make sure it's not playing prematurely
 
         int maxStackHeight = 1;
 
+        bool startsGoingOverEdge = false;
+
+        //gets the locations off the lowest/highest boardspace in the row/column
+        Vector3[] eitherEdgeTargetLocs = BeyondEitherEdges(boardSpaceX, boardSpaceZ, xDirection, zDirection);
+        Vector3 midTargetLoc = (eitherEdgeTargetLocs[0] + eitherEdgeTargetLocs[1]) / 2f;
+        midTargetLoc = new Vector3(midTargetLoc.x, -2f, midTargetLoc.z);
+
+        //spill each tile in the stack
         for (int i = 0; i < numTilesToMove; i++)
         {
-            //toBeSpilled.provisionalTileCount = 0;
             int index = numTilesToMove - 1 - i;
             Tile tileToMove = toBeSpilled.tileStack[index];
             tilesQueuedToSpill.Add(tileToMove);
             int[] targetCoords = CalculateAdjacentSpace(boardSpaceX, boardSpaceZ, xDirection, zDirection);
+            bool isGoingOverEdge = IsGoingOverEdge(boardSpaceX, boardSpaceZ, xDirection, zDirection);
+
             boardSpaceX = targetCoords[0];
             boardSpaceZ = targetCoords[1];
             BoardSpace spaceToSpillOnto = board[boardSpaceX, boardSpaceZ];
             tileToMove.spaceQueuedToSpillOnto = spaceToSpillOnto;
-
-            //toBeSpilled.PositionNewTile(tileToMove);
             toBeSpilled.tileStack.Remove(tileToMove);
+
+			if (isGoingOverEdge){
+				startsGoingOverEdge = true;
+			}
 
             // ANIMATE SPILL
 
-            if (spaceToSpillOnto.tileStack.Count > maxStackHeight)
-            {
+
+            if (spaceToSpillOnto.tileStack.Count > maxStackHeight) {
                 maxStackHeight = spaceToSpillOnto.tileStack.Count;
             }
             float jumpHeight = maxStackHeight;
             if(maxStackHeight > 1){
                 jumpHeight *= 0.65f;
             }
-            tileSpillSequence.Append(
-                tileToMove.transform.DOJump(new Vector3(
-                    spaceToSpillOnto.transform.position.x,
-                    spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
-                    spaceToSpillOnto.transform.position.z), jumpHeight,
-                                            1, tileSpillIndivDuration, false)
-            );
+            Vector3 targetLocation = new Vector3(spaceToSpillOnto.transform.position.x,
+                        spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
+                                                 spaceToSpillOnto.transform.position.z);
+            if (startsGoingOverEdge)
+            {
+				/* tileSpillSequence.Append(
+					 tileToMoveTransform.DOJump(eitherEdgeTargetLocs[0],
+													   jumpHeight, 1, tileSpillIndivDuration / 3f))
+								  .Append(tileToMoveTransform.DOJump(eitherEdgeTargetLocs[1],
+												 -2, 1, tileSpillIndivDuration / 3f))
+								  .Append(tileToMoveTransform.DOJump(targetLocation,
+												 jumpHeight, 1, tileSpillIndivDuration / 3f));*/
 
-            Vector3 rotateTileVector = new Vector3(0, 0, 0);
-            if(xDirection == 0 && zDirection == 1){ //up
-                rotateTileVector = new Vector3(180, 0, 0);
-            } else if(xDirection == 0 && zDirection == -1){ // down
-                rotateTileVector = new Vector3(-180, 0, 0);
-			} else if (xDirection == -1 && zDirection == 0){ // left
-				rotateTileVector = new Vector3(0, 0, 180);
-			} else if (xDirection == 1 && zDirection == 0){ // right
-				rotateTileVector = new Vector3(0, 0, -180);
-			}
-            tileToMove.transform.localRotation = Quaternion.identity;
+				tileSpillSequence.Append(
+					tileToMove.transform.DOMove(eitherEdgeTargetLocs[0], tileSpillIndivDuration / 2f))
+                                 .Append(tileToMove.transform.DOMove(midTargetLoc,tileSpillIndivDuration / 2f))
+								 .Append(tileToMove.transform.DOMove(eitherEdgeTargetLocs[1], tileSpillIndivDuration / 2f))
+								 .Append(tileToMove.transform.DOMove(targetLocation,tileSpillIndivDuration / 2f));
+            }
+            else
+            {
+                //jumping animation
+                tileSpillSequence.Append(
+                    tileToMove.transform.DOJump(new Vector3(
+                        spaceToSpillOnto.transform.position.x,
+                        spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
+                        spaceToSpillOnto.transform.position.z), jumpHeight,
+                                                1, tileSpillIndivDuration, false)
+                );
 
-            tileSpillSequence.Insert(tileSpillIndivDuration*i,
-                                     tileToMove.transform.DORotate(rotateTileVector, tileSpillIndivDuration, RotateMode.LocalAxisAdd));
+                //rotation animation
+                Vector3 rotateTileVector = new Vector3(0, 0, 0);
+                if (xDirection == 0 && zDirection == 1)
+                { //up
+                    rotateTileVector = new Vector3(180, 0, 0);
+                }
+                else if (xDirection == 0 && zDirection == -1)
+                { // down
+                    rotateTileVector = new Vector3(-180, 0, 0);
+                }
+                else if (xDirection == -1 && zDirection == 0)
+                { // left
+                    rotateTileVector = new Vector3(0, 0, 180);
+                }
+                else if (xDirection == 1 && zDirection == 0)
+                { // right
+                    rotateTileVector = new Vector3(0, 0, -180);
+                }
+                tileToMove.transform.localRotation = Quaternion.identity;
 
+                tileSpillSequence.Join(tileToMove.transform.DORotate(rotateTileVector, tileSpillIndivDuration, RotateMode.LocalAxisAdd));
+            }
 
-            spaceToSpillOnto.AddTile(tileToMove, false);
+            spaceToSpillOnto.AddTile(tileToMove, false); //officially add to the space
 
         }
-        if (!boardFalling)
-        {
+        if (!boardFalling){
             tileSpillSequence.OnComplete(OnCompleteSpillAnimation);
         }
 
@@ -704,6 +834,7 @@ public class BoardManager
 
     }
 
+
     public void QueueSpillAction()
     {
         QueueSpillHelper(spaceToSpill, spillDirectionX, spillDirectionZ);
@@ -714,14 +845,15 @@ public class BoardManager
 	}
 
     private void OnCompleteSpillAnimationForLastTile(){
-        boardFinishedFalling = true;
+        boardCollapseSequence.Play();
+		Services.GameManager.currentCamera.DOShakePosition(0.3f, 0.5f, 20, 90, true);
+     //   boardFinishedFalling = true;
     }
 
 
     public void BoardFallAction()
     {
         //Services.GameManager.currentCamera.GetComponent<CameraManager>().DoShake();
-        Services.GameManager.currentCamera.DOShakePosition(0.3f, 0.5f,13,90,true);
 
         List<BoardSpace> spacesToCollapse = GetSpaceListFromSideNum();
 
@@ -760,6 +892,20 @@ public class BoardManager
                 highestStackIndexInSpacesToCollapse = i;
         }
 
+
+		boardCollapseSequence = DOTween.Sequence();
+		for (int b = 0; b < spacesToCollapse.Count; ++b)
+		{
+			if (b > 0)
+			{
+				boardCollapseSequence.Insert(b * 0.2f, spacesToCollapse[b].transform.DOMoveY(-6f, 0.8f));
+			}
+			else
+			{
+				boardCollapseSequence.Append(spacesToCollapse[b].transform.DOMoveY(-6f, 0.8f));
+			}
+		}
+
         for (int s = 0; s < spacesToCollapse.Count; ++s){
             if(s == highestStackIndexInSpacesToCollapse){
                 lastTileInBoardFall = true;
@@ -769,20 +915,9 @@ public class BoardManager
             QueueSpillHelper(spacesToCollapse[s], xDirection, zDirection);
         }
 
-        Sequence boardCollapseSequence = DOTween.Sequence();
-        for (int b = 0; b < spacesToCollapse.Count; ++b){
-            if (b > 0)
-            {
-                boardCollapseSequence.Insert(b*0.2f,spacesToCollapse[b].transform.DOMoveY(-10f, 1f));
-            }
-            else
-            {
-                boardCollapseSequence.Append(spacesToCollapse[b].transform.DOMoveY(-10f, 1f));
-            }
-        }
 
         boardCollapseSequence.OnComplete(() => OnCompleteBoardFall(spacesToCollapse));
-
+        boardCollapseSequence.Pause();
         sideAboutToCollapse = (sideAboutToCollapse + 1) % 4;
         numSidesCollapsed++;
 
@@ -796,12 +931,13 @@ public class BoardManager
 				Object.Destroy(spaces[j].gameObject);
 			}
 		}
+        boardFinishedFalling = true;
     }
 
    // private void 
 
     public void CheckScoreAction(){
-        Debug.Log("Enter CheckScoreAction");
+       // Debug.Log("Enter CheckScoreAction");
         //perhaps check score every time a new tile is placed in the center, to reward tall stacks.
         for (int i = 0; i < centerSpaces.Count; ++i){
             if (centerSpaces[i].tileStack.Count > 0)
@@ -814,6 +950,7 @@ public class BoardManager
                     // Object.Destroy(centerSpaces[i].tileStack[j].gameObject);
                     centerSpaces[i].tileStack[j].transform.DOMoveY(0, 0.3f);
                     centerSpaces[i].tileStack[j].transform.DOScaleY(0, 0.3f);
+                    centerSpaces[i].tileStack[j].gameObject.layer = LayerMask.NameToLayer("Default");
                 }
                 centerSpaces[i].tileStack.Clear();
                 centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
@@ -827,7 +964,7 @@ public class BoardManager
         {
             if (!scoreAnimationStarted)
             {
-                Debug.Log("enter centerSpaceChanged");
+                //Debug.Log("enter centerSpaceChanged");
                 bool colorred = false;
                 bool colorblue = false;
                 bool coloryellow = false;
@@ -856,7 +993,7 @@ public class BoardManager
                 Sequence scoringSequence = DOTween.Sequence();
                 if (colorred && colorblue && coloryellow && colorgreen)
                 {
-                    Debug.Log("enter scoring");
+                    //Debug.Log("enter scoring");
                     scoringSequence.AppendInterval(0.5f);
                     for (int i = 0; i < centerSpaces.Count; ++i)
                     {
@@ -871,14 +1008,14 @@ public class BoardManager
                 }
                 else
                 {
-                    Debug.Log("enter not scoring");
+                   // Debug.Log("enter not scoring");
                     finishedCheckingScore = true;
                     centerSpaceChanged = false;
                 }
             }
 
         } else {
-            Debug.Log("enter center space not changed");
+          //  Debug.Log("enter center space not changed");
             finishedCheckingScore = true;
         }
     }
@@ -1032,11 +1169,27 @@ public class BoardManager
 
 	private class Turn : FSM<BoardManager>.State { }
 
+    private class EnterBoard : Turn{
+        public override void OnEnter(){
+           // Debug.Log("EnterBoard");
+            Context.boardFinishedEntering = false;
+			Context.AnimateEnterBoard();
+        }
+        public override void Update(){
+            if (Context.boardFinishedEntering)
+            {
+                TransitionTo<SpawnTile>();
+                return;
+            }
+        }
+
+    }
+
 	private class SpawnTile : Turn
 	{
 		public override void OnEnter()
 		{
-            Debug.Log("SpawnTile");
+           // Debug.Log("SpawnTile");
             Context.boardFinishedFalling = false;
             Context.lastTileInBoardFall = false;
             Context.boardFalling = false;
@@ -1054,7 +1207,7 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
-            Debug.Log("SelectTile");
+            //Debug.Log("SelectTile");
 		}
 		public override void Update()
 		{
@@ -1075,7 +1228,7 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
-            Debug.Log("PlaceTile");
+          //  Debug.Log("PlaceTile");
 		}
 		public override void Update()
 		{
@@ -1095,7 +1248,7 @@ public class BoardManager
 		public override void OnEnter()
 		{
             Services.Main.ConfirmUndoUI.SetActive(false);
-            Debug.Log("SelectStack");
+           // Debug.Log("SelectStack");
             if (Context.undoSpill)
             {
 				Context.undoSpill = false;
@@ -1125,7 +1278,7 @@ public class BoardManager
 		public override void OnEnter()
 		{
             
-            Debug.Log("QueueSpill");
+           // Debug.Log("QueueSpill");
 			//Services.Main.ConfirmUndoUI.SetActive(true); //insert this line OnComplete spill animation
             Context.finalizeSpill = false;
             Context.QueueSpillAction();
@@ -1154,7 +1307,7 @@ public class BoardManager
     {
         public override void OnEnter()
         {
-            Debug.Log("BoardFall");
+          //  Debug.Log("BoardFall");
             Context.boardFalling = true;
             Services.Main.ConfirmUndoUI.SetActive(false);
             Context.BoardFallAction();
