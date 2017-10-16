@@ -11,6 +11,7 @@ public class Main : Scene<TransitionData> {
     public LayerMask spillUILayer;
     public LayerMask topTilesAndSpillUI;
 
+    public GameObject Previews;
     public GameObject ConfirmUndoUI;
     public Text Score;
     public GameObject GameOverText;

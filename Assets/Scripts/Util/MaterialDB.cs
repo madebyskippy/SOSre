@@ -17,4 +17,7 @@ public class MaterialDB : ScriptableObject {
     private Material[] boardMats;
     public Material[] BoardMats { get { return boardMats; }}
 
+    [SerializeField]
+    private Sprite[] previewSprites;
+    public Sprite[] PreviewSprites{ get { return previewSprites; }}
 }

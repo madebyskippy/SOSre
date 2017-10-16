@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 //using System.Diagnostics;
+using UnityEngine.UI;
 
 using DG.Tweening;
+using Shuffler;
 
 public class BoardManager
 {
@@ -69,14 +71,8 @@ public class BoardManager
     private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
     private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
 
-   /* public string MyValue{
-        set {
-            if(this.location != oneLocation){
-                Debugger.Break();
-                this.location = oneLocation;
-            }
-        }
-    }*/
+    private Image[] previewTiles;
+
 
 
     public enum Brightness {Bright,Dark,Normal}
@@ -88,6 +84,10 @@ public class BoardManager
 
     public void InitializeBoard()
     {
+        previewTiles = new Image[3];
+        previewTiles[0] = Services.Main.Previews.transform.GetChild(0).GetComponent<Image>();
+		previewTiles[1] = Services.Main.Previews.transform.GetChild(1).GetComponent<Image>();
+		previewTiles[2] = Services.Main.Previews.transform.GetChild(2).GetComponent<Image>();
 
         score = 0;
         numSidesCollapsed = 0;
@@ -137,10 +137,53 @@ public class BoardManager
 
         }
 
+        SetPreviews();
 
         fsm = new FSM<BoardManager>(this);
         fsm.TransitionTo<EnterBoard>();
 
+    }
+
+    private void SetPreviews(){
+        int[] previewColors = FirstThreeColors();
+        for (int i = 0; i < 3; ++i)
+        {
+            if (previewColors[i] == -1)
+            {
+                previewTiles[i].sprite = null;
+            }
+            else
+            {
+                previewTiles[i].sprite = Services.Materials.PreviewSprites[previewColors[i]];
+            }
+        }
+
+
+    }
+
+    private int[] FirstThreeColors(){
+        int[] firstthree = new int[3];
+        if (tileBag.Count > 3)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                firstthree[i] = tileBag[i].color;
+            }
+        } else if(tileBag.Count == 2){
+            firstthree[0] = tileBag[0].color;
+            firstthree[1] = tileBag[1].color;
+            firstthree[2] = -1;
+        } else if(tileBag.Count == 1){
+			firstthree[0] = tileBag[0].color;
+            firstthree[1] = -1;
+			firstthree[2] = -1;
+        } else{
+            firstthree[0] = -1;
+			firstthree[1] = -1;
+			firstthree[2] = -1;
+        }
+
+        return firstthree;
     }
 
     private void CreateBoard()
@@ -266,7 +309,14 @@ public class BoardManager
         {
             CreateTilesOfAColor(i);
         }
+        if(Services.BoardData.randomTiles){
+            //ShuffleTileBag();
+            tileBag.Shuffle();
+        }
+
     }
+
+
 
     private void CreateTilesOfAColor(int materialIndex)
     {
@@ -282,8 +332,8 @@ public class BoardManager
         if (tileBag.Count > 0)
         {
             int numTilesInBag = tileBag.Count;
-            Tile drawnTile;
-            int tileIndexToDraw;
+            Tile drawnTile = tileBag[0];
+           /* int tileIndexToDraw;
             if (Services.BoardData.randomTiles)
             {
                 tileIndexToDraw = Random.Range(0, numTilesInBag);
@@ -291,9 +341,10 @@ public class BoardManager
             else
             {
                 tileIndexToDraw = 0;
-            }
-            drawnTile = tileBag[tileIndexToDraw];
+            }*/
+            //drawnTile = tileBag[0];
             tileBag.Remove(drawnTile);
+            SetPreviews();
             return drawnTile;
         }
         return null;
@@ -321,7 +372,7 @@ public class BoardManager
     {
         tileToPlace.transform.SetParent(pivotPoint.transform);
         tileToPlace.transform.position = new Vector3(-10, 0, 0);
-        tileToPlace.transform.DOMove(new Vector3(-5, 0, 0), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
+        tileToPlace.transform.DOMove(new Vector3(-4.14f, 0, 0.27f), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
         tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
 
 
