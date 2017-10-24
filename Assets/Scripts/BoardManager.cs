@@ -35,6 +35,10 @@ public class BoardManager
 
     public GameObject pivotPoint;
 
+    private Vector3[] spawnLocs = { new Vector3(-4.14f, 0, 0.27f),
+                                 //   new Vector3()
+                                    };
+
     public Tile spawnedTile;
     public Tile selectedTile;
     public List<Tile> tilesQueuedToSpill;
@@ -370,9 +374,13 @@ public class BoardManager
 
     void SetupSpawnedTile(Tile tileToPlace)
     {
-        tileToPlace.transform.SetParent(pivotPoint.transform);
+
         tileToPlace.transform.position = new Vector3(-10, 0, 0);
-        tileToPlace.transform.DOMove(new Vector3(-4.14f, 0, 0.27f), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
+        tileToPlace.transform.SetParent(pivotPoint.transform, false);
+        //tileToPlace.transform.SetParent(mainBoard.transform);
+
+        //spawnloc
+        tileToPlace.transform.DOLocalMove(new Vector3(-4.14f, 0, 0.27f), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
         tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
 
 
@@ -634,7 +642,7 @@ public class BoardManager
                 IndicateCollapsibleSide();
             }
             //selectedTile.GetComponent<AudioSource>().Play();
-
+            selectedTile.transform.SetParent(mainBoard.transform);
             selectedTile = null;
 
         }
@@ -718,6 +726,10 @@ public class BoardManager
                         new Vector3(topTileLocation.x, topTileLocation.y, topTileLocation.z), Quaternion.identity) as GameObject;
                     spillUI.transform.SetParent(mainBoard.transform);
                     spillArrowRenderers = spillUI.GetComponentsInChildren<MeshRenderer>();
+                    /*foreach(MeshRenderer mr in spillArrowRenderers){
+                        mr.material.renderQueue = 5000;
+                    }*/
+                    //previously spillDirectionUI was: -9.2, 9.2, -9.2
                     spillUI.transform.eulerAngles = new Vector3(0, rotationIndex * 90, 0);
                     spillUI.transform.GetChild(0).transform.localEulerAngles = new Vector3(0, -rotationIndex * 90, 0);
                 }
@@ -1196,13 +1208,14 @@ public class BoardManager
             {
                 if (arrowRenderer != null)
                 {
-                    ToggleRendererGlow(arrowRenderer, Brightness.Dark);
+                    arrowRenderer.material.shader = Services.Materials.ArrowShaders[0];
                 }
             }
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
             {
-                ToggleGameObjGlow(hit.collider.gameObject, Brightness.Bright);
+                hit.collider.gameObject.GetComponent<Renderer>().material.shader = Services.Materials.ArrowShaders[1];
+               // ToggleGameObjGlow(hit.collider.gameObject, Brightness.Bright);
             }
         }
     }

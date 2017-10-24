@@ -20,6 +20,9 @@ MonoBehaviour:
   - {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 4800000, guid: 1e274a0a84f72844eb1ebc50280366b3, type: 3}
   - {fileID: 4800000, guid: 6e2a2dbc27b3c4805a112041ec3c28ae, type: 3}
+  arrowShaders:
+  - {fileID: 4800000, guid: a1f4b1f53898a4d1fbd82e578c137ba1, type: 3}
+  - {fileID: 4800000, guid: 389982fb35cd5470c8c54943d2f8fd3b, type: 3}
   boardMats:
   - {fileID: 2100000, guid: 39effba3a36cf4faeaa02f37215ab1d5, type: 2}
   - {fileID: 2100000, guid: 756f9047843b642a09f47b5a60ef45ad, type: 2}

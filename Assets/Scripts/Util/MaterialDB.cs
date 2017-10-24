@@ -12,6 +12,10 @@ public class MaterialDB : ScriptableObject {
     private Shader[] highlightShaders;
     public Shader[] HighlightShaders { get { return highlightShaders; }}
 
+    [SerializeField]
+    private Shader[] arrowShaders;
+    public Shader[] ArrowShaders { get { return arrowShaders; }}
+
 
     [SerializeField]
     private Material[] boardMats;

@@ -18,19 +18,30 @@ Shader "Self-Illumin/Outlined DiffuseAlt"
    } 
 
    SubShader 
-   { 
-      Tags { "RenderType"="Opaque" } 
+   {  
+
+      Tags {
+         "Queue" = "Transparent"
+         "IgnoreProjector" = "True"
+         "RenderType" = "Transparent" 
+      } 
       //Minor switch 
       //UsePass "Toon/Basic/BASE" 
       //UsePass "Diffuse/BASE"
 		UsePass "Self-Illumin/VertexLit/BASE"
-		UsePass "Diffuse/PPL"	  
+		UsePass "Diffuse/PPL"	
+
+      Cull Off 
+      ZWrite Off
+      ZTest Always
+      Offset -1, -1
+
       Pass 
       { 
          Name "OUTLINE" 
          LOD 200
-		 Tags { "LightMode" = "Always" } 
-          
+		// Tags { "LightMode" = "Always" } 
+
          CGPROGRAM 
 // Upgrade NOTE: excluded shader from DX11 and Xbox360; has structs without semantics (struct appdata members vertex,normal)
 #pragma exclude_renderers d3d11 xbox360
@@ -63,12 +74,12 @@ Shader "Self-Illumin/Outlined DiffuseAlt"
          } 
          ENDCG 
           
-         Cull Front 
-         ZWrite On 
+         //Cull Front 
          ColorMask RGB 
          Blend SrcAlpha OneMinusSrcAlpha 
          //? -Note: I don't remember why I put a "?" here 
          SetTexture [_MainTex] { combine primary } 
+
       } 
    } 
    

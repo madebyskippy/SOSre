@@ -30,6 +30,7 @@ public class BoardSpace : MonoBehaviour {
         centerColor = -1;
         colNum = col;
         rowNum = row;
+
     }
 
 	public void PositionNewTile(Tile tileToPosition)
