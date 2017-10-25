@@ -22,8 +22,7 @@ public class Main : Scene<TransitionData> {
 	// Use this for initialization
 	void Start () {
 
-		Services.BoardData.InitializeBoardData();
-        Services.BoardManager.InitializeBoard();
+
 	}
 	
 	// Update is called once per frame
@@ -34,12 +33,15 @@ public class Main : Scene<TransitionData> {
 	void InitializeServices()
 	{
 		Services.Main = this;
+        Services.BoardData.InitializeBoardData();
+        Services.BoardManager.InitializeBoard();
 	}
 
 	internal override void OnEnter(TransitionData data)
 	{
 		InitializeServices();
 		Services.GameManager.currentCamera = GetComponentInChildren<Camera>();
+
 	}
 
     public void ConfirmButton(){
@@ -59,5 +61,15 @@ public class Main : Scene<TransitionData> {
     public void Resume(){
         PauseScreen.SetActive(false);
         Time.timeScale = 1;
+    }
+
+    public void Restart(){
+        // Services.SceneStackManager.Swap<Main>();
+        Services.SceneStackManager.PopScene();
+        Services.SceneStackManager.PushScene<Main>();
+    }
+
+    public void MainMenu(){
+        Services.SceneStackManager.Swap<TitleScreen>();
     }
 }

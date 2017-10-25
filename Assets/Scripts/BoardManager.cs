@@ -88,6 +88,7 @@ public class BoardManager
 
     public void InitializeBoard()
     {
+        //DOTween.Init(true, false, LogBehaviour.Verbose).SetCapacity(200, 10);
         previewTiles = new Image[3];
         previewTiles[0] = Services.Main.Previews.transform.GetChild(0).GetComponent<Image>();
 		previewTiles[1] = Services.Main.Previews.transform.GetChild(1).GetComponent<Image>();
@@ -226,6 +227,7 @@ public class BoardManager
     {
         Vector3[,] targetLocations = new Vector3[numCols, numRows];
         Sequence boardSequence = DOTween.Sequence();
+        boardSequence.Pause();
 
         for (int i = 0; i < numCols; ++i)
         {
@@ -257,7 +259,9 @@ public class BoardManager
     }
 
     private void OnCompleteEnterBoard(){
+        
         Services.Main.HighlightCenter.transform.DOScaleY(1f, 0.5f);
+        Debug.Log("oncompleteenterboard");
         boardFinishedEntering = true;
     }
 
@@ -1236,7 +1240,7 @@ public class BoardManager
 
     private class EnterBoard : Turn{
         public override void OnEnter(){
-           // Debug.Log("EnterBoard");
+            
             Context.boardFinishedEntering = false;
 			Context.AnimateEnterBoard();
         }
