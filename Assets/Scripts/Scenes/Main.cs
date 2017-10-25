@@ -15,6 +15,9 @@ public class Main : Scene<TransitionData> {
     public GameObject ConfirmUndoUI;
     public Text Score;
     public GameObject GameOverText;
+    public GameObject PauseScreen;
+
+    public GameObject HighlightCenter;
 
 	// Use this for initialization
 	void Start () {
@@ -45,5 +48,16 @@ public class Main : Scene<TransitionData> {
 
     public void UndoButton(){
         Services.BoardManager.UndoSpill();
+    }
+
+    public void Pause(){
+        Time.timeScale = 0;
+        PauseScreen.SetActive(true);
+
+    }
+
+    public void Resume(){
+        PauseScreen.SetActive(false);
+        Time.timeScale = 1;
     }
 }

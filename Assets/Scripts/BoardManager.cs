@@ -257,6 +257,7 @@ public class BoardManager
     }
 
     private void OnCompleteEnterBoard(){
+        Services.Main.HighlightCenter.transform.DOScaleY(1f, 0.5f);
         boardFinishedEntering = true;
     }
 
