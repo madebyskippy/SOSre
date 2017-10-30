@@ -1780,6 +1780,7 @@ MonoBehaviour:
   GameOverText: {fileID: 1237182322829930}
   PauseScreen: {fileID: 1180673823203240}
   HighlightCenter: {fileID: 1202909771559604}
+  gradient: {fileID: 212477628032348490}
 --- !u!114 &114912589736344856
 MonoBehaviour:
   m_ObjectHideFlags: 1

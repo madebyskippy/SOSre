@@ -19,9 +19,12 @@ public class Main : Scene<TransitionData> {
 
     public GameObject HighlightCenter;
 
+    public SpriteRenderer gradient;
+
 	// Use this for initialization
 	void Start () {
 
+       // Time.timeScale = 1;
 
 	}
 	
@@ -65,11 +68,14 @@ public class Main : Scene<TransitionData> {
 
     public void Restart(){
         // Services.SceneStackManager.Swap<Main>();
+        Time.timeScale = 1;
         Services.SceneStackManager.PopScene();
         Services.SceneStackManager.PushScene<Main>();
     }
 
     public void MainMenu(){
+
         Services.SceneStackManager.Swap<TitleScreen>();
+
     }
 }

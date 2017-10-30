@@ -89,6 +89,11 @@ public class BoardManager
     public void InitializeBoard()
     {
         //DOTween.Init(true, false, LogBehaviour.Verbose).SetCapacity(200, 10);
+        DOTween.Clear(true);
+        DOTween.ClearCachedTweens();
+        DOTween.Validate();
+        Time.timeScale = 1;
+
         previewTiles = new Image[3];
         previewTiles[0] = Services.Main.Previews.transform.GetChild(0).GetComponent<Image>();
 		previewTiles[1] = Services.Main.Previews.transform.GetChild(1).GetComponent<Image>();
@@ -228,11 +233,11 @@ public class BoardManager
         Vector3[,] targetLocations = new Vector3[numCols, numRows];
         Sequence boardSequence = DOTween.Sequence();
         boardSequence.Pause();
-
         for (int i = 0; i < numCols; ++i)
         {
             for (int j = 0; j < numRows; ++j)
             {
+                
                 // targetLocations[i, j] = board[i, j].transform.position;
                 Vector3 targetLocation = board[i, j].transform.position;
                 board[i, j].transform.position = new Vector3(targetLocation.x, -10f, targetLocation.z);
