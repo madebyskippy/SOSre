@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+using UnityStandardAssets.ImageEffects;
+
 public class Main : Scene<TransitionData> {
 
 	public LayerMask spawnedTileLayer;
@@ -15,6 +17,7 @@ public class Main : Scene<TransitionData> {
     public GameObject ConfirmUndoUI;
     public Text Score;
     public GameObject GameOverText;
+    public GameObject GameOverScoreText;
     public GameObject PauseScreen;
 
     public GameObject HighlightCenter;
@@ -58,12 +61,14 @@ public class Main : Scene<TransitionData> {
     public void Pause(){
         Time.timeScale = 0;
         PauseScreen.SetActive(true);
+        Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
 
     }
 
     public void Resume(){
         PauseScreen.SetActive(false);
         Time.timeScale = 1;
+        Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = false;
     }
 
     public void Restart(){

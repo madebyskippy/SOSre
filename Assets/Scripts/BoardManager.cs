@@ -4,6 +4,9 @@ using UnityEngine;
 //using System.Diagnostics;
 using UnityEngine.UI;
 
+
+using UnityStandardAssets.ImageEffects;
+
 using DG.Tweening;
 using Shuffler;
 
@@ -77,13 +80,23 @@ public class BoardManager
 
     private Image[] previewTiles;
 
-
+    private Color[] juicyColors = {
+        new Color(160f/255f,111f/255f,180f/255f), //campurple
+        new Color(0f/255f, 97f/255f, 189f/255f), //camblue
+        new Color(83f/255f, 234f/255f, 172f/255f), //camgreen
+        new Color(148f/255f,59f/255f,92f/255f), //camred
+        new Color(251f/255f,194f/255f,123f/255f) //camyellow
+    };
 
     public enum Brightness {Bright,Dark,Normal}
 
     public void Update()
     {
         fsm.Update();
+    }
+
+    public void ChangeGradientColor(int index){
+        Services.Main.gradient.DOColor(juicyColors[index], 0.5f);
     }
 
     public void InitializeBoard()
@@ -971,11 +984,11 @@ public class BoardManager
 		{
 			if (b > 0)
 			{
-				boardCollapseSequence.Insert(b * 0.2f, spacesToCollapse[b].transform.DOMoveY(-6f, 0.8f));
+				boardCollapseSequence.Insert(b * 0.2f, spacesToCollapse[b].transform.DOMoveY(-7f, 0.8f));
 			}
 			else
 			{
-				boardCollapseSequence.Append(spacesToCollapse[b].transform.DOMoveY(-6f, 0.8f));
+				boardCollapseSequence.Append(spacesToCollapse[b].transform.DOMoveY(-7f, 0.8f));
 			}
 		}
 
@@ -1066,6 +1079,7 @@ public class BoardManager
                 Sequence scoringSequence = DOTween.Sequence();
                 if (colorred && colorblue && coloryellow && colorgreen)
                 {
+                    ChangeGradientColor(4);
                     //Debug.Log("enter scoring");
                     scoringSequence.AppendInterval(0.5f);
                     for (int i = 0; i < centerSpaces.Count; ++i)
@@ -1263,6 +1277,7 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
+            Context.ChangeGradientColor(0);
            // Debug.Log("SpawnTile");
             Context.boardFinishedFalling = false;
             Context.lastTileInBoardFall = false;
@@ -1302,6 +1317,8 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
+
+            Context.ChangeGradientColor(1);
           //  Debug.Log("PlaceTile");
 		}
 		public override void Update()
@@ -1321,6 +1338,8 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
+
+            Context.ChangeGradientColor(2);
             Services.Main.ConfirmUndoUI.SetActive(false);
            // Debug.Log("SelectStack");
             if (Context.undoSpill)
@@ -1381,6 +1400,8 @@ public class BoardManager
     {
         public override void OnEnter()
         {
+
+            Context.ChangeGradientColor(3);
           //  Debug.Log("BoardFall");
             Context.boardFalling = true;
             Services.Main.ConfirmUndoUI.SetActive(false);
@@ -1419,7 +1440,16 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
-            Services.Main.GameOverText.SetActive(true);
+            if (Context.score > 0)
+            {
+                Services.Main.GameOverScoreText.SetActive(true);
+            }
+            else
+            {
+                Services.Main.GameOverText.SetActive(true);
+            }
+
+            Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
 			//Context. ___
 		}
 		public override void Update()
