@@ -11,6 +11,7 @@ public static class Services {
     public static SceneStackManager<TransitionData> SceneStackManager { get; set; }
     public static InputManager InputManager { get; set; }
     public static Main Main { get; set; }
+	public static LevelEditor LevelEditor { get; set; }
 
 	public static BoardData BoardData { get; set; }
     public static BoardManager BoardManager { get; set; }
