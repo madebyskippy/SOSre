@@ -280,6 +280,25 @@ public class BoardManager
         
         Services.Main.HighlightCenter.transform.DOScaleY(1f, 0.5f);
         Debug.Log("oncompleteenterboard");
+        for (int i = 0; i < numCols; i++)
+        {
+            for (int j = 0; j < numRows; j++)
+            {
+                /* if ((!IsCentered(i, numCols) && IsEdge(j, numRows)) || (!IsCentered(j, numRows) && IsEdge(i, numCols)))
+                 {
+                     Tile tileToPlace;
+                     tileToPlace = DrawTile();
+                     board[i, j].AddTile(tileToPlace, true);
+                     tileToPlace.GetComponent<MeshRenderer>().enabled = false;
+                     initialTilesOnBoard.Add(tileToPlace);
+                 }*/
+                string s = "";
+                foreach(Tile tile in board[i, j].tileStack){
+                    s += tile.color+" ";
+                }
+                Debug.Log("["+i + ", " + j + "]:{" + s+"}");
+            }
+        }
         boardFinishedEntering = true;
     }
 

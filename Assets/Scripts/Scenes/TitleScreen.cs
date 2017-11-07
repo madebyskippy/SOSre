@@ -20,4 +20,8 @@ public class TitleScreen : Scene<TransitionData> {
 	{
 		Services.SceneStackManager.Swap<Main>();
 	}
+
+    public void StartLevelEditor(){
+        Services.SceneStackManager.Swap<LevelEditor>();
+    }
 }
