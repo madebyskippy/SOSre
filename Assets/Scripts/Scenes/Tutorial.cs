@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TitleScreen : Scene<TransitionData> {
+public class Tutorial : Scene<TransitionData> {
 
 	void Start()
 	{
@@ -21,11 +21,4 @@ public class TitleScreen : Scene<TransitionData> {
 		Services.SceneStackManager.Swap<Main>();
 	}
 
-    public void StartLevelEditor(){
-        Services.SceneStackManager.Swap<LevelEditor>();
-    }
-
-    public void StartTutorial(){
-        Services.SceneStackManager.Swap<Tutorial>();
-    }
 }

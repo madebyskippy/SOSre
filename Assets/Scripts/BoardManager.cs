@@ -78,6 +78,9 @@ public class BoardManager
     private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
     private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
 
+    public WaitTask gameoverWait;
+    private bool gameIsOver;
+
     private Image[] previewTiles;
 
     private Color[] juicyColors = {
@@ -101,6 +104,8 @@ public class BoardManager
 
     public void InitializeBoard()
     {
+        gameIsOver = false;
+        gameoverWait = new WaitTask(1f);
         //DOTween.Init(true, false, LogBehaviour.Verbose).SetCapacity(200, 10);
         DOTween.Clear(true);
         DOTween.ClearCachedTweens();
@@ -253,33 +258,35 @@ public class BoardManager
                 
                 // targetLocations[i, j] = board[i, j].transform.position;
                 Vector3 targetLocation = board[i, j].transform.position;
-                board[i, j].transform.position = new Vector3(targetLocation.x, -10f, targetLocation.z);
-                board[i, j].GetComponent<MeshRenderer>().enabled = true;
-                boardSequence.Insert(0.07f * (j + i * numRows), board[i, j].transform.DOMoveY(targetLocation.y, 0.6f).SetEase(Ease.InOutBack));
+                BoardSpace bs = board[i, j];
+                bs.transform.position = new Vector3(targetLocation.x, -10f, targetLocation.z);
+                bs.GetComponent<MeshRenderer>().enabled = true;
+                boardSequence.Insert(0.07f * (j + i * numRows), bs.transform.DOMoveY(targetLocation.y, 0.6f).SetEase(Ease.InOutBack).OnComplete(()=>bs.GetComponent<AudioSource>().Play()));
             }
         }
-
+        //enter tiles
         Sequence tileSequence = DOTween.Sequence();
         for (int t = 0; t < initialTilesOnBoard.Count; ++t)
         {
             Vector3 targetLocation = initialTilesOnBoard[t].transform.position;
-            initialTilesOnBoard[t].transform.position = new Vector3(targetLocation.x, 10f, targetLocation.z);
-            initialTilesOnBoard[t].GetComponent<MeshRenderer>().enabled = true;
-            boardSequence.Insert((0.07f * t) + 2f, initialTilesOnBoard[t].transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear));
+            Tile tile = initialTilesOnBoard[t];
+            tile.transform.position = new Vector3(targetLocation.x, 10f, targetLocation.z);
+            tile.GetComponent<MeshRenderer>().enabled = true;
+            boardSequence.Insert((0.07f * t) + 2f, tile.transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear).OnComplete(()=>tile.GetComponent<AudioSource>().Play()));
         }
     
 
 		boardSequence.OnComplete(OnCompleteEnterBoard);
 		boardSequence.Play();
 
-        //boardSequence.Append
 
     }
 
     private void OnCompleteEnterBoard(){
-        
+
+        Services.Main.audioController.bgm.Play();
         Services.Main.HighlightCenter.transform.DOScaleY(1f, 0.5f);
-        Debug.Log("oncompleteenterboard");
+        //Debug.Log("oncompleteenterboard");
         for (int i = 0; i < numCols; i++)
         {
             for (int j = 0; j < numRows; j++)
@@ -296,7 +303,7 @@ public class BoardManager
                 foreach(Tile tile in board[i, j].tileStack){
                     s += tile.color+" ";
                 }
-                Debug.Log("["+i + ", " + j + "]:{" + s+"}");
+                //Debug.Log("["+i + ", " + j + "]:{" + s+"}");
             }
         }
         boardFinishedEntering = true;
@@ -424,7 +431,7 @@ public class BoardManager
         //spawnloc
         tileToPlace.transform.DOLocalMove(new Vector3(-4.14f, 0, 0.27f), 0.5f).SetEase(Ease.OutBounce).OnComplete(PlayFloatSequence);
         tileToPlace.gameObject.layer = LayerMask.NameToLayer("DrawnTile");
-
+        Services.Main.audioController.tilespawnentry.PlayOneShot(Services.Main.audioController.tilespawnentry.clip,1f);
 
         //setup floating sequence for the spawnedtile
 		tileFloatSequence = DOTween.Sequence();
@@ -599,6 +606,7 @@ public class BoardManager
                 selectedTile = spawnedTile;
                 spawnedTile = null;
                 tileFloatSequence.Kill();
+                Services.Main.audioController.select.Play();
             }
         }
     }
@@ -647,6 +655,7 @@ public class BoardManager
         //finalize tile placement
         if (Input.GetMouseButtonDown(0) && tileInPosition)
         {
+            Services.Main.audioController.select.Play();
             tileInPosition = false;
 
             BoardSpace space = CalculateSpaceFromLocation(selectedTile.transform.position);
@@ -709,6 +718,7 @@ public class BoardManager
                 //highlightspillarrow
                 if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.Main.spillUILayer))
                 {
+                    Services.Main.audioController.select.Play();
                     spillDirectionX = 0;
                     spillDirectionZ = 0;
                     //soundplayer.transform.GetChild(5).gameObject.GetComponent<AudioSource>().Play();
@@ -747,7 +757,7 @@ public class BoardManager
                 if (space.tileStack.Count > 1)
                 {
                     stackSelected = true;
-
+                    Services.Main.audioController.select.Play();
                     if (selectedSpace != null)
                     {
                         if (selectedSpace != space)
@@ -874,31 +884,33 @@ public class BoardManager
             Vector3 targetLocation = new Vector3(spaceToSpillOnto.transform.position.x,
                         spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
                                                  spaceToSpillOnto.transform.position.z);
-       //     if (startsGoingOverEdge)
-       //     {
-				/* tileSpillSequence.Append(
-					 tileToMoveTransform.DOJump(eitherEdgeTargetLocs[0],
-													   jumpHeight, 1, tileSpillIndivDuration / 3f))
-								  .Append(tileToMoveTransform.DOJump(eitherEdgeTargetLocs[1],
-												 -2, 1, tileSpillIndivDuration / 3f))
-								  .Append(tileToMoveTransform.DOJump(targetLocation,
-												 jumpHeight, 1, tileSpillIndivDuration / 3f));*/
+            //     if (startsGoingOverEdge)
+            //     {
+            /* tileSpillSequence.Append(
+                 tileToMoveTransform.DOJump(eitherEdgeTargetLocs[0],
+                                                   jumpHeight, 1, tileSpillIndivDuration / 3f))
+                              .Append(tileToMoveTransform.DOJump(eitherEdgeTargetLocs[1],
+                                             -2, 1, tileSpillIndivDuration / 3f))
+                              .Append(tileToMoveTransform.DOJump(targetLocation,
+                                             jumpHeight, 1, tileSpillIndivDuration / 3f));*/
 
-		/*		tileSpillSequence.Append(
-					tileToMove.transform.DOMove(eitherEdgeTargetLocs[0], tileSpillIndivDuration / 2f))
-                                 .Append(tileToMove.transform.DOMove(midTargetLoc,tileSpillIndivDuration / 2f))
-								 .Append(tileToMove.transform.DOMove(eitherEdgeTargetLocs[1], tileSpillIndivDuration / 2f))
-								 .Append(tileToMove.transform.DOMove(targetLocation,tileSpillIndivDuration / 2f));
-            }
-            else
-            {*/
-                //jumping animation
+            /*		tileSpillSequence.Append(
+                        tileToMove.transform.DOMove(eitherEdgeTargetLocs[0], tileSpillIndivDuration / 2f))
+                                     .Append(tileToMove.transform.DOMove(midTargetLoc,tileSpillIndivDuration / 2f))
+                                     .Append(tileToMove.transform.DOMove(eitherEdgeTargetLocs[1], tileSpillIndivDuration / 2f))
+                                     .Append(tileToMove.transform.DOMove(targetLocation,tileSpillIndivDuration / 2f));
+                }
+                else
+                {*/
+            //jumping animation
+            Tile tempTile = tileToMove;
                 tileSpillSequence.Append(
                     tileToMove.transform.DOJump(new Vector3(
                         spaceToSpillOnto.transform.position.x,
                         spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
                         spaceToSpillOnto.transform.position.z), jumpHeight,
                                                 1, tileSpillIndivDuration, false)
+                .OnComplete(()=>tempTile.GetComponent<AudioSource>().Play())
                 );
 
                 //rotation animation
@@ -952,6 +964,7 @@ public class BoardManager
     private void OnCompleteSpillAnimationForLastTile(){
         boardCollapseSequence.Play();
 		Services.GameManager.currentCamera.DOShakePosition(0.3f, 0.5f, 20, 90, true);
+        Services.Main.audioController.shake.Play();
      //   boardFinishedFalling = true;
     }
 
@@ -1040,6 +1053,16 @@ public class BoardManager
     }
 
    // private void 
+    private void PlayScoreSound(int i){
+        if (i < 3)
+        {
+            Services.Main.audioController.scoresuccessive.pitch += i * 0.2f;
+            Services.Main.audioController.scoresuccessive.PlayOneShot(Services.Main.audioController.scoresuccessive.clip, 1f);
+        } else{
+            Services.Main.audioController.scoresuccessive.pitch += i*0.1f;
+            Services.Main.audioController.scoresuccessive.PlayOneShot(Services.Main.audioController.scoresuccessive.clip, 1f);
+        }
+    }
 
     public void CheckScoreAction(){
        // Debug.Log("Enter CheckScoreAction");
@@ -1050,17 +1073,19 @@ public class BoardManager
                 centerSpaces[i].centerColor = centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color;
                 centerSpaces[i].GetComponent<MeshRenderer>().material = Services.Materials.TileMats[centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].color];
                 //Object.Destroy(centerSpaces[i].tileStack[centerSpaces[i].tileStack.Count - 1].gameObject);
- 
+
+                //sink into center
                 for (int j = centerSpaces[i].tileStack.Count - 1; j >= 0; --j){
                     // Object.Destroy(centerSpaces[i].tileStack[j].gameObject);
-                    centerSpaces[i].tileStack[j].transform.DOMoveY(0, 0.3f);
-                    centerSpaces[i].tileStack[j].transform.DOScaleY(0, 0.3f);
-                    centerSpaces[i].tileStack[j].gameObject.layer = LayerMask.NameToLayer("Default");
+                    Tile ct = centerSpaces[i].tileStack[j];
+                    ct.transform.DOMoveY(0, 0.3f);
+                    ct.transform.DOScaleY(0, 0.3f);
+                    ct.gameObject.layer = LayerMask.NameToLayer("Default");
                 }
                 centerSpaces[i].tileStack.Clear();
                 centerSpaces[i].provisionalTileCount = centerSpaces[i].tileStack.Count;
                 centerSpaceChanged = true;
-
+                Services.Main.audioController.centertileabsorb.Play();
             }
         }
 
@@ -1098,12 +1123,15 @@ public class BoardManager
                 Sequence scoringSequence = DOTween.Sequence();
                 if (colorred && colorblue && coloryellow && colorgreen)
                 {
+                    Services.Main.audioController.scoresuccessive.pitch = 1.7f;
                     ChangeGradientColor(4);
                     //Debug.Log("enter scoring");
                     scoringSequence.AppendInterval(0.5f);
                     for (int i = 0; i < centerSpaces.Count; ++i)
                     {
-                        scoringSequence.Append(centerSpaces[i].transform.DOPunchScale(new Vector3(0, Random.Range(80,120), 0), 0.35f, 1, 1));
+                        BoardSpace bs = centerSpaces[i];
+                        int temp = i;
+                        scoringSequence.Append(bs.transform.DOPunchScale(new Vector3(0, Random.Range(80,120), 0), 0.35f, 1, 1).OnStart(()=>PlayScoreSound(temp)));
                     }
                     scoringSequence.AppendInterval(0.6f); //score wait time
                     scoringSequence.OnComplete(OnCompleteScoringSequence);
@@ -1284,6 +1312,55 @@ public class BoardManager
         return false;
 	}
 
+    public void PreGameOverAction(){
+        Services.TaskManager.AddTask(gameoverWait);
+
+    }
+
+    public void GameOverAction()
+    {
+
+        gameoverWait.finished = false;
+        Services.Main.audioController.bgm.DOFade(0f, 0.5f).OnComplete(() => Services.Main.audioController.bgm.Stop());
+        if (score > 0)
+        {
+            Services.Main.audioController.gameoverwin.Play();
+            Services.Main.GameOverScoreText.SetActive(true);
+
+            for (int i = 0; i < score; ++i)
+            {
+
+                GameObject finalscoreimg = Object.Instantiate(Services.Prefabs.FinalScoreImg, Services.Main.GameOverScoreText.transform, false) as GameObject;
+                finalscoreimg.transform.localScale = new Vector3(0, 0, 0);
+                float x;
+                if (score > 1)
+                {
+                    x = -40f * (score - 1);
+                    x += 80f * i;
+                }
+                else
+                {
+                    x = 0;
+                }
+
+                finalscoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, -100f);
+                finalscoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
+            }
+
+        }
+        else
+        {
+            Services.Main.audioController.gameoverlose.Play();
+            Services.Main.GameOverText.SetActive(true);
+
+        }
+        Services.Main.PauseScreen.transform.GetChild(0).gameObject.SetActive(false);
+        Services.Main.PauseScreen.transform.GetChild(1).gameObject.SetActive(true);
+
+        Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
+    
+    }
+
 
 
 	private class Turn : FSM<BoardManager>.State { }
@@ -1451,6 +1528,7 @@ public class BoardManager
                     Context.finishedCheckingScore = false;
                     if (Context.GameOverCheck())
                     {
+                       // Services.TaskManager.AddTask(new WaitTask(1f));
                         TransitionTo<GameOver>();
                         return;
                     }
@@ -1471,41 +1549,15 @@ public class BoardManager
 	{
 		public override void OnEnter()
 		{
-            if (Context.score > 0)
-            {
-                Services.Main.GameOverScoreText.SetActive(true);
-
-                for (int i = 0; i < Context.score; ++i){
-
-                    GameObject finalscoreimg = Object.Instantiate(Services.Prefabs.FinalScoreImg, Services.Main.GameOverScoreText.transform, false) as GameObject;
-                    finalscoreimg.transform.localScale = new Vector3(0, 0, 0);
-                    float x;
-                    if(Context.score > 1){ 
-                        x = -40f * (Context.score-1); 
-                        x += 80f * i; 
-                    } else{
-                        x = 0;
-                    }
-
-                    finalscoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, -100f);
-                    finalscoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
-                }
-
-            }
-            else
-            {
-                Services.Main.GameOverText.SetActive(true);
-
-            }
-            Services.Main.PauseScreen.transform.GetChild(0).gameObject.SetActive(false);
-            Services.Main.PauseScreen.transform.GetChild(1).gameObject.SetActive(true);
-
-            Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
+            Context.PreGameOverAction();
+            //Context.GameOverAction();
 			//Context. ___
 		}
 		public override void Update()
 		{
-
+            if (Context.gameoverWait.finished){
+                Context.GameOverAction();
+            }
 		}
 	}
 }

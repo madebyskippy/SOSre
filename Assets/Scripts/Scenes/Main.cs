@@ -24,6 +24,8 @@ public class Main : Scene<TransitionData> {
 
     public SpriteRenderer gradient;
 
+    public AudioController audioController;
+
 	// Use this for initialization
 	void Start () {
 
@@ -51,14 +53,17 @@ public class Main : Scene<TransitionData> {
 	}
 
     public void ConfirmButton(){
+        audioController.confirm.PlayOneShot(audioController.confirm.clip, 1f);
         Services.BoardManager.ConfirmSpill();
     }
 
     public void UndoButton(){
+        Services.Main.audioController.select.Play();
         Services.BoardManager.UndoSpill();
     }
 
     public void Pause(){
+        Services.Main.audioController.select.Play();
         Time.timeScale = 0;
         PauseScreen.SetActive(true);
         Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
@@ -66,6 +71,8 @@ public class Main : Scene<TransitionData> {
     }
 
     public void Resume(){
+
+        Services.Main.audioController.select.Play();
         PauseScreen.SetActive(false);
         Time.timeScale = 1;
         Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = false;
@@ -73,6 +80,8 @@ public class Main : Scene<TransitionData> {
 
     public void Restart(){
         // Services.SceneStackManager.Swap<Main>();
+
+        Services.Main.audioController.select.Play();
         Time.timeScale = 1;
         Services.SceneStackManager.PopScene();
         Services.SceneStackManager.PushScene<Main>();
@@ -80,6 +89,7 @@ public class Main : Scene<TransitionData> {
 
     public void MainMenu(){
 
+        Services.Main.audioController.select.Play();
         Services.SceneStackManager.Swap<TitleScreen>();
 
     }

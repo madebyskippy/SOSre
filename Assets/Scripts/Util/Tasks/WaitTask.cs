@@ -5,25 +5,32 @@ using System.Text;
 using UnityEngine;
 
 public class WaitTask : Task
+{
+    private float duration;
+    private float timeElapsed;
+    public bool finished;
+
+    public WaitTask(float _duration)
     {
-        private float duration;
-        private float timeElapsed;
-
-        public WaitTask(float _duration)
-        {
-            duration = _duration;
-        }
-
-        protected override void Init()
-        {
-            timeElapsed = 0;
-        }
-
-        internal override void Update()
-        {
-            timeElapsed += Time.deltaTime;
-
-            if (timeElapsed >= duration) SetStatus(TaskStatus.Success);
-        }
-
+        duration = _duration;
     }
+
+    protected override void Init()
+    {
+        timeElapsed = 0;
+    }
+
+    internal override void Update()
+    {
+        timeElapsed += Time.deltaTime;
+        if (timeElapsed >= duration) {
+            SetStatus(TaskStatus.Success);
+        }
+    }
+
+    protected override void OnSuccess()
+    {
+        finished = true;
+    }
+
+}
