@@ -20,4 +20,11 @@ public class PrefabDB : ScriptableObject {
 	private GameObject spillUI;
 	public GameObject SpillUI { get { return spillUI; } }
 
+    [SerializeField]
+    private GameObject scoreImg;
+    public GameObject ScoreImg { get { return scoreImg; }}
+
+    [SerializeField]
+    private GameObject finalScoreImg;
+    public GameObject FinalScoreImg { get { return finalScoreImg; }}
 }

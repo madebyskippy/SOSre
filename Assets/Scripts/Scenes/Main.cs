@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
 using UnityStandardAssets.ImageEffects;
+
 
 public class Main : Scene<TransitionData> {
 

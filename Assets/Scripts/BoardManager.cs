@@ -874,8 +874,8 @@ public class BoardManager
             Vector3 targetLocation = new Vector3(spaceToSpillOnto.transform.position.x,
                         spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
                                                  spaceToSpillOnto.transform.position.z);
-            if (startsGoingOverEdge)
-            {
+       //     if (startsGoingOverEdge)
+       //     {
 				/* tileSpillSequence.Append(
 					 tileToMoveTransform.DOJump(eitherEdgeTargetLocs[0],
 													   jumpHeight, 1, tileSpillIndivDuration / 3f))
@@ -884,14 +884,14 @@ public class BoardManager
 								  .Append(tileToMoveTransform.DOJump(targetLocation,
 												 jumpHeight, 1, tileSpillIndivDuration / 3f));*/
 
-				tileSpillSequence.Append(
+		/*		tileSpillSequence.Append(
 					tileToMove.transform.DOMove(eitherEdgeTargetLocs[0], tileSpillIndivDuration / 2f))
                                  .Append(tileToMove.transform.DOMove(midTargetLoc,tileSpillIndivDuration / 2f))
 								 .Append(tileToMove.transform.DOMove(eitherEdgeTargetLocs[1], tileSpillIndivDuration / 2f))
 								 .Append(tileToMove.transform.DOMove(targetLocation,tileSpillIndivDuration / 2f));
             }
             else
-            {
+            {*/
                 //jumping animation
                 tileSpillSequence.Append(
                     tileToMove.transform.DOJump(new Vector3(
@@ -922,7 +922,7 @@ public class BoardManager
                 tileToMove.transform.localRotation = Quaternion.identity;
 
                 tileSpillSequence.Join(tileToMove.transform.DORotate(rotateTileVector, tileSpillIndivDuration, RotateMode.LocalAxisAdd));
-            }
+          //  }
 
             spaceToSpillOnto.AddTile(tileToMove, false); //officially add to the space
 
@@ -1110,7 +1110,19 @@ public class BoardManager
                     scoringSequence.Play();
                     scoreAnimationStarted = true;
                     score += 1;
-                    Services.Main.Score.text = "SCORE: " + score;
+
+                    //GameObject scoreimg = Object.Instantiate(Services.Prefabs.ScoreImg, Services.Prefabs.ScoreImg.transform.position, Quaternion.identity) as GameObject;
+                    //scoreimg.transform.SetParent(Services.Main.Score.transform);
+                    GameObject scoreimg = Object.Instantiate(Services.Prefabs.ScoreImg, Services.Main.Score.transform, false) as GameObject;
+                    scoreimg.transform.localScale = new Vector3(0, 0, 0);
+                    float posX = 15f * score;
+                    if(score > 1){
+                        posX += (20f*(score - 1));
+                    }
+                    scoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(posX, -24f);
+                    scoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
+                    scoreimg.transform.DORotate(new Vector3(0, 0, 720f), 1f, RotateMode.FastBeyond360);
+                    //Services.Main.Score.text = "SCORE " + score;
                 }
                 else
                 {
@@ -1462,11 +1474,31 @@ public class BoardManager
             if (Context.score > 0)
             {
                 Services.Main.GameOverScoreText.SetActive(true);
+
+                for (int i = 0; i < Context.score; ++i){
+
+                    GameObject finalscoreimg = Object.Instantiate(Services.Prefabs.FinalScoreImg, Services.Main.GameOverScoreText.transform, false) as GameObject;
+                    finalscoreimg.transform.localScale = new Vector3(0, 0, 0);
+                    float x;
+                    if(Context.score > 1){ 
+                        x = -40f * (Context.score-1); 
+                        x += 80f * i; 
+                    } else{
+                        x = 0;
+                    }
+
+                    finalscoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, -100f);
+                    finalscoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
+                }
+
             }
             else
             {
                 Services.Main.GameOverText.SetActive(true);
+
             }
+            Services.Main.PauseScreen.transform.GetChild(0).gameObject.SetActive(false);
+            Services.Main.PauseScreen.transform.GetChild(1).gameObject.SetActive(true);
 
             Services.GameManager.currentCamera.GetComponent<BlurOptimized>().enabled = true;
 			//Context. ___
