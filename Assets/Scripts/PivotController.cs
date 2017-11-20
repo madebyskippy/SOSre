@@ -21,7 +21,14 @@ public class PivotController : MonoBehaviour {
     public void RotateLeft(){
         if (!spinning)
         {
-            Services.Main.audioController.rotatecamera.PlayOneShot(Services.Main.audioController.rotatecamera.clip,1f);
+            if (Services.GameManager.sceneRoot.GetComponentInChildren<Main>() != null)
+            {
+                Services.Main.audioController.rotatecamera.PlayOneShot(Services.Main.audioController.rotatecamera.clip, 1f);
+            }
+            else
+            {
+                Services.LevelEditor.audioController.rotatecamera.PlayOneShot(Services.LevelEditor.audioController.rotatecamera.clip, 1f);
+            }
             spinning = true;
             //currentRotation += Vector3.up * 90f;
             transform.DORotate(Vector3.up * 90f, 0.6f, RotateMode.WorldAxisAdd)
@@ -33,7 +40,12 @@ public class PivotController : MonoBehaviour {
     public void RotateRight(){
         if (!spinning)
         {
-            Services.Main.audioController.rotatecamera.PlayOneShot(Services.Main.audioController.rotatecamera.clip, 1f);
+            if (Services.GameManager.sceneRoot.GetComponentInChildren<Main>() != null)
+            {
+                Services.Main.audioController.rotatecamera.PlayOneShot(Services.Main.audioController.rotatecamera.clip, 1f);
+            } else{
+                Services.LevelEditor.audioController.rotatecamera.PlayOneShot(Services.LevelEditor.audioController.rotatecamera.clip, 1f);
+            }
             spinning = true;
             //currentRotation += Vector3.down * 90f;
             transform.DORotate(Vector3.down * 90f, 0.6f, RotateMode.WorldAxisAdd)
