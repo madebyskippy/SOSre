@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 //using System.Diagnostics;
 using UnityEngine.UI;
-
+//using System;
 
 using UnityStandardAssets.ImageEffects;
 
@@ -123,7 +123,6 @@ public class BoardManager
         Services.Main.ConfirmUndoUI.SetActive(false);
 
         CreateBoard();
-        CreateTileBag();
 
         pivotPoint = GameObject.FindGameObjectWithTag("PivotPoint");
 
@@ -140,6 +139,8 @@ public class BoardManager
 
         if (Services.BoardData.randomTiles)
         {
+
+            CreateTileBag();
             for (int b = 0; b < 2; b++)
             {
                 for (int i = 0; i < numCols; i++)
@@ -158,18 +159,43 @@ public class BoardManager
                 }
             }
 
+            SetPreviews();
         }
         else
         {
 
-
+            ParseLevel();
         }
 
-        SetPreviews();
 
         fsm = new FSM<BoardManager>(this);
         fsm.TransitionTo<EnterBoard>();
 
+    }
+
+    private void ParseLevel(){
+        string str = HandleTextFile.ReadString("test");
+        string[] strs = str.Split('-');
+        tileBag = new List<Tile>();
+        for (int i = 0; i < 8; ++i){
+            CreateTile(int.Parse(strs[i]));
+        }
+
+
+        for (int j = 8; j < strs.Length; ++j){
+            if(strs[j].Equals("[")){
+                int c = int.Parse(strs[j + 1]);
+                int r = int.Parse(strs[j + 2]);
+                //for()
+            }
+        }
+        //first 8 elements are the tile previews
+        //the rest should be split by:
+        /*
+         * '[' c index ',' r index ']'
+         * until another character equals '[', keep creating the board
+         * 
+         * */
     }
 
     private void SetPreviews(){
@@ -264,15 +290,18 @@ public class BoardManager
                 boardSequence.Insert(0.07f * (j + i * numRows), bs.transform.DOMoveY(targetLocation.y, 0.6f).SetEase(Ease.InOutBack).OnComplete(()=>bs.GetComponent<AudioSource>().Play()));
             }
         }
-        //enter tiles
-        Sequence tileSequence = DOTween.Sequence();
-        for (int t = 0; t < initialTilesOnBoard.Count; ++t)
+        //enter tiles, only applicable to random tiles
+        if (Services.BoardData.randomTiles)
         {
-            Vector3 targetLocation = initialTilesOnBoard[t].transform.position;
-            Tile tile = initialTilesOnBoard[t];
-            tile.transform.position = new Vector3(targetLocation.x, 10f, targetLocation.z);
-            tile.GetComponent<MeshRenderer>().enabled = true;
-            boardSequence.Insert((0.07f * t) + 2f, tile.transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear).OnComplete(()=>tile.GetComponent<AudioSource>().Play()));
+            Sequence tileSequence = DOTween.Sequence();
+            for (int t = 0; t < initialTilesOnBoard.Count; ++t)
+            {
+                Vector3 targetLocation = initialTilesOnBoard[t].transform.position;
+                Tile tile = initialTilesOnBoard[t];
+                tile.transform.position = new Vector3(targetLocation.x, 10f, targetLocation.z);
+                tile.GetComponent<MeshRenderer>().enabled = true;
+                boardSequence.Insert((0.07f * t) + 2f, tile.transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear).OnComplete(() => tile.GetComponent<AudioSource>().Play()));
+            }
         }
     
 
