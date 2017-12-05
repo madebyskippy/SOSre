@@ -7,6 +7,7 @@ public class TitleScreen : Scene<TransitionData> {
 	void Start()
 	{
 
+        Services.BoardData.InitializeBoardData();
        // Time.timeScale = 1;
 	}
 
@@ -16,8 +17,9 @@ public class TitleScreen : Scene<TransitionData> {
 
 	}
 
-	public void StartGame()
+	public void StartLevelGame()
 	{
+        Services.BoardData.randomTiles = false;
 		Services.SceneStackManager.Swap<Main>();
 	}
 
@@ -27,5 +29,10 @@ public class TitleScreen : Scene<TransitionData> {
 
     public void StartTutorial(){
         Services.SceneStackManager.Swap<Tutorial>();
+    }
+
+    public void StartRandomGame(){
+        Services.BoardData.randomTiles = true;
+        Services.SceneStackManager.Swap<Main>();
     }
 }

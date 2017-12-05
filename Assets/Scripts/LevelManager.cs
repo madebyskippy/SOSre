@@ -26,14 +26,31 @@ public class LevelManager {
     private int previousTileColor;
     public Tile selectedTile;
 
+    public Tile selectedStackTile;
+    public bool trashSelectedTile;
+
     public void Update()
     {
         fsm.Update();
     }
 
+    public void CleanBoard(){
+        for (int i = 0; i < numCols; ++i){
+            for (int j = 0; j < numRows; j++){
+                for (int n = 0; n < board[i, j].tileStack.Count; ++n){
+                    Object.Destroy(board[i, j].tileStack[n].gameObject);
+                }
+                Object.Destroy(board[i, j].gameObject);
+            }
+        }
+
+    }
+
     public void InitializeBoard()
     {
-
+        DOTween.Clear(true);
+        DOTween.ClearCachedTweens();
+        DOTween.Validate();
         Time.timeScale = 1;
         mainBoard = GameObject.FindWithTag("Board");
 
@@ -41,6 +58,7 @@ public class LevelManager {
 
         pivotPoint = GameObject.FindGameObjectWithTag("PivotPoint");
 
+        Services.LevelEditor.selectedTileMenu.SetActive(false);;
 
         fsm = new FSM<LevelManager>(this);
         fsm.TransitionTo<DefaultState>();
@@ -104,6 +122,57 @@ public class LevelManager {
         return board[col, row];
     }
 
+    private Tile CreateTile(int materialIndex)
+    {
+        Vector3 targetLocation = new Vector3(0, 0, 0);
+        GameObject tile = Object.Instantiate(Services.Prefabs.Tile, targetLocation, Quaternion.identity) as GameObject;
+        tile.transform.SetParent(mainBoard.transform);
+        tile.GetComponent<MeshRenderer>().material = Services.Materials.TileMats[materialIndex];
+        tile.GetComponent<Tile>().SetTile(materialIndex);
+
+        return tile.GetComponent<Tile>();
+    }
+
+    public void ParseLevel(string lvl){
+        string read = HandleTextFile.ReadString(lvl);
+        string[] strs = read.Split('-');
+        //tileBag = new List<Tile>();
+
+        for (int i = 0; i < 8; ++i)
+        {
+            Services.LevelEditor.dropdowns[i].value = int.Parse(strs[i]);
+        }
+
+        for (int j = 8; j < strs.Length; ++j)
+        {
+            if (strs[j].Equals("."))
+            {
+                break;
+            }
+            else if (strs[j].Equals("[") && j + 5 < strs.Length)
+            { //0=[, 1=c,2=comma,3=r,4=], possibly 5=.
+                int c = int.Parse(strs[j + 1]);
+                int r = int.Parse(strs[j + 3]);
+
+                int k = j + 5;
+                while (k < strs.Length - 1 && !strs[k].Equals("["))
+                {
+                    
+                    int n = int.Parse(strs[k]);
+                    //make tile, don't add to tilebag
+                    Tile tileToPlace = CreateTile(n);
+                    board[c, r].AddTile(tileToPlace, true);
+                    k++;
+                }
+            }
+        }
+    }
+
+    public void TrashTile(){
+
+        trashSelectedTile = true;
+    }
+
     public void SpawnTileAction(){
         
         Vector3 offscreen = new Vector3(-1000, -1000, -1000);
@@ -135,6 +204,27 @@ public class LevelManager {
 
     }
 
+    public void DefaultStateCheck(){
+        StackSelectCheck();
+    }
+
+    public void StackSelectCheck(){
+        Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+        if (Input.GetMouseButtonDown(0))
+        {
+            RaycastHit hit = new RaycastHit();
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.LevelEditor.tileLayer))
+            {
+                if (hit.collider.gameObject.GetComponent<Tile>() != null)
+                {
+                    //selectedStackTile = .GetComponent<Tile>();
+                    selectedStackTile = hit.collider.gameObject.GetComponent<Tile>();
+                    selectedStackTile.gameObject.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[1];
+                }
+            }
+        }
+    }
+
     public void SelectTileAction(){
         Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
         if (Input.GetMouseButtonDown(0))
@@ -142,12 +232,9 @@ public class LevelManager {
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.LevelEditor.spawnedTileLayer))
             {
-               // ToggleTileGlow(spawnedTile, Brightness.Bright);
-               // SetSpaceGlow(Brightness.Dark);
+                
                 selectedTile = currentSpawnedTile.GetComponent<Tile>();
-                //spawnedTile = null;
-                //tileFloatSequence.Kill();
-                //Services.Main.audioController.select.Play();
+
             }
         }
 
@@ -158,23 +245,13 @@ public class LevelManager {
         RaycastHit hit = new RaycastHit();
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.LevelEditor.topTileLayer))
         {
-            //if (!CalculateSpaceFromLocation(hit.collider.transform.position).isCenterTile)
-            //{
+
             Vector3 pointOnBoard = hit.transform.position;
             selectedTile.transform.position = new Vector3(pointOnBoard.x, pointOnBoard.y + 0.2f, pointOnBoard.z);
             //selectedTile.transform.parent = null;
             selectedTile.transform.parent = Services.LevelEditor.transform;
             tileInPosition = true;
-            //BoardSpace space = CalculateSpaceFromLocation(pointOnBoard);
-           /* ToggleSpaceGlow(space, Brightness.Bright);
-            if (highlightedSpace != null)
-            {
-                if (highlightedSpace != space)
-                {
-                    ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
-                }
-            }
-            highlightedSpace = space;*/
+
 
         }
         else
@@ -184,38 +261,56 @@ public class LevelManager {
             {
                 selectedTile.transform.position = hit.point;
             }
-            //selectedTile.transform.position = Services.GameManager.currentCamera.ScreenToWorldPoint(Input.mousePosition);
-           /* if (highlightedSpace != null)
-            {
-                ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
-                highlightedSpace = null;
-            }*/
+
         }
 
 
         //finalize tile placement
         if (Input.GetMouseButtonDown(0) && tileInPosition)
         {
-           // Services.Main.audioController.select.Play();
             tileInPosition = false;
 
             BoardSpace space = CalculateSpaceFromLocation(selectedTile.transform.position);
             space.AddTile(selectedTile, false);
             space.gameObject.layer = LayerMask.NameToLayer("Default");
+
+            for (int i = 0; i < space.tileStack.Count; ++i){
+                space.tileStack[i].gameObject.layer = LayerMask.NameToLayer("TileLayer");
+            }
+
             selectedTile.GetComponent<MeshRenderer>().sortingOrder = 0;
-           /* ToggleTileGlow(selectedTile, Brightness.Normal);
-           / SetSpaceGlow(Brightness.Normal);
-            if (highlightedSpace != null)
-            {
-                ToggleSpaceGlow(highlightedSpace, Brightness.Normal);
-            }*/
-            //selectedTile.GetComponent<AudioSource>().Play();
+
             selectedTile.transform.SetParent(mainBoard.transform);
+            selectedTile.gameObject.layer = LayerMask.NameToLayer("TopTiles");
             selectedTile = null;
             currentSpawnedTile = null;
 
         }
 
+    }
+
+    public void SelectStackTileAction(){
+        if(trashSelectedTile){
+            trashSelectedTile = false;
+            //Services.
+
+            //selectedStackTile
+
+            BoardSpace space = CalculateSpaceFromLocation(selectedStackTile.transform.position);
+            int index = space.tileStack.IndexOf(selectedStackTile);
+            for (int i = space.tileStack.Count - 1; i > index; --i){
+                space.tileStack[i].transform.position = space.tileStack[i - 1].transform.position;
+            }
+            space.tileStack.Remove(selectedStackTile);
+            Object.Destroy(selectedStackTile.gameObject);
+            if (space.tileStack.Count > 0)
+            {
+                space.tileStack[space.tileStack.Count - 1].gameObject.layer = LayerMask.NameToLayer("TopTiles");
+            } else{
+                space.gameObject.layer = LayerMask.NameToLayer("TopTiles");
+            }
+            selectedStackTile = null;
+        }
     }
 
     private class Phase : FSM<LevelManager>.State { }
@@ -224,7 +319,7 @@ public class LevelManager {
     {
         public override void OnEnter()
         {
-            Debug.Log("default");
+            Services.LevelEditor.selectedTileMenu.SetActive(false);
         }
         public override void Update()
         {
@@ -233,6 +328,14 @@ public class LevelManager {
                 Context.previousTileColor = Services.LevelEditor.currentTileColor;
                 TransitionTo<SpawnTile>();
                 return;
+            } else if(Context.selectedStackTile != null){
+                Services.LevelEditor.selectedTileMenu.SetActive(true);
+                TransitionTo<SelectStackTile>();
+                return;
+                
+            } 
+            else{
+                Context.DefaultStateCheck();
             }
         }
 
@@ -292,15 +395,6 @@ public class LevelManager {
         }
         public override void Update()
         {
-            /*if (Context.previousTileColor != Services.LevelEditor.currentTileColor)
-            {
-                TransitionTo<DefaultState>();
-            } else{
-                if (Context.selectedTile != null)
-                {
-                    Context.PlaceTileAction();
-                }
-            }*/
             if (Services.LevelEditor.currentTileColor >= 0)
             {
                 Context.previousTileColor = Services.LevelEditor.currentTileColor;
@@ -322,5 +416,24 @@ public class LevelManager {
             
         }
     }
+
+    private class SelectStackTile : Phase{
+        public override void OnEnter(){
+            Debug.Log("select stack tile");
+        }
+        public override void Update(){
+            if (Context.selectedStackTile == null)
+            {
+                TransitionTo<DefaultState>();
+                return;
+            }
+            else
+            {
+                Context.SelectStackTileAction();
+            }
+        }
+    }
+
+
 
 }

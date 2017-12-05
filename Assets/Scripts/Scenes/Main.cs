@@ -41,7 +41,6 @@ public class Main : Scene<TransitionData> {
 	void InitializeServices()
 	{
 		Services.Main = this;
-        Services.BoardData.InitializeBoardData();
         Services.BoardManager.InitializeBoard();
 	}
 

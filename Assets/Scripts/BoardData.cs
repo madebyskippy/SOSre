@@ -20,6 +20,6 @@ public class BoardData {
 
         initialNumberOfEachTileColor = new int[4] { 20, 20, 20, 20 };
 
-        randomTiles = true;
+        randomTiles = false;
     }
 }

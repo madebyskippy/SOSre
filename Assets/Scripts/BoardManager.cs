@@ -174,28 +174,36 @@ public class BoardManager
     }
 
     private void ParseLevel(){
-        string str = HandleTextFile.ReadString("test");
-        string[] strs = str.Split('-');
+        string read = HandleTextFile.ReadString("test");
+        string[] strs = read.Split('-');
         tileBag = new List<Tile>();
+
+        /* might need to put this at the end */
         for (int i = 0; i < 8; ++i){
-            CreateTile(int.Parse(strs[i]));
+            CreateTile(int.Parse(strs[i]), true); //adds to tilebag
         }
 
 
         for (int j = 8; j < strs.Length; ++j){
-            if(strs[j].Equals("[")){
+            if(strs[j].Equals(".")){
+                break;
+            }
+            else if(strs[j].Equals("[") && j+5 < strs.Length){ //0=[, 1=c,2=comma,3=r,4=], possibly 5=.
                 int c = int.Parse(strs[j + 1]);
-                int r = int.Parse(strs[j + 2]);
-                //for()
+                int r = int.Parse(strs[j + 3]);
+
+                int k = j + 5;
+                while(k < strs.Length-1 && !strs[k].Equals("[")){
+                    int n = int.Parse(strs[k]);
+                    //make tile, don't add to tilebag
+                    Tile tileToPlace = CreateTile(n, false);
+                    board[c, r].AddTile(tileToPlace, true);
+                    tileToPlace.GetComponent<MeshRenderer>().enabled = false;
+                    initialTilesOnBoard.Add(tileToPlace);
+                    k++;
+                }
             }
         }
-        //first 8 elements are the tile previews
-        //the rest should be split by:
-        /*
-         * '[' c index ',' r index ']'
-         * until another character equals '[', keep creating the board
-         * 
-         * */
     }
 
     private void SetPreviews(){
@@ -204,10 +212,12 @@ public class BoardManager
         {
             if (previewColors[i] == -1)
             {
-                previewTiles[i].sprite = null;
+                // previewTiles[i].sprite = null;
+                previewTiles[i].gameObject.SetActive(false);
             }
             else
             {
+                previewTiles[i].gameObject.SetActive(true);
                 previewTiles[i].sprite = Services.Materials.PreviewSprites[previewColors[i]];
             }
         }
@@ -217,7 +227,7 @@ public class BoardManager
 
     private int[] FirstThreeColors(){
         int[] firstthree = new int[3];
-        if (tileBag.Count > 3)
+        if (tileBag.Count >= 3)
         {
             for (int i = 0; i < 3; ++i)
             {
@@ -231,7 +241,7 @@ public class BoardManager
 			firstthree[0] = tileBag[0].color;
             firstthree[1] = -1;
 			firstthree[2] = -1;
-        } else{
+        } else if (tileBag.Count == 0){
             firstthree[0] = -1;
 			firstthree[1] = -1;
 			firstthree[2] = -1;
@@ -291,8 +301,8 @@ public class BoardManager
             }
         }
         //enter tiles, only applicable to random tiles
-        if (Services.BoardData.randomTiles)
-        {
+        /*if (Services.BoardData.randomTiles)
+        {*/
             Sequence tileSequence = DOTween.Sequence();
             for (int t = 0; t < initialTilesOnBoard.Count; ++t)
             {
@@ -302,7 +312,7 @@ public class BoardManager
                 tile.GetComponent<MeshRenderer>().enabled = true;
                 boardSequence.Insert((0.07f * t) + 2f, tile.transform.DOMoveY(targetLocation.y, 0.5f).SetEase(Ease.Linear).OnComplete(() => tile.GetComponent<AudioSource>().Play()));
             }
-        }
+       // }
     
 
 		boardSequence.OnComplete(OnCompleteEnterBoard);
@@ -373,7 +383,7 @@ public class BoardManager
         board[colNum, rowNum] = boardSpace.GetComponent<BoardSpace>();
     }
 
-    private void CreateTile(int materialIndex)
+    private Tile CreateTile(int materialIndex, bool addToTilebag)
     {
         //GameObject tile;
         Vector3 offscreen = new Vector3(-1000, -1000, -1000);
@@ -381,7 +391,11 @@ public class BoardManager
         tile.transform.SetParent(mainBoard.transform);
         tile.GetComponent<MeshRenderer>().material = Services.Materials.TileMats[materialIndex];
         tile.GetComponent<Tile>().SetTile(materialIndex);
-        tileBag.Add(tile.GetComponent<Tile>());
+        if (addToTilebag)
+        {
+            tileBag.Add(tile.GetComponent<Tile>());
+        }
+        return tile.GetComponent<Tile>();
     }
 
     private void CreateTileBag()
@@ -404,7 +418,7 @@ public class BoardManager
     {
         for (int i = 0; i < Services.BoardData.initialNumberOfEachTileColor[materialIndex]; ++i)
         {
-            CreateTile(materialIndex);
+            CreateTile(materialIndex, true);
         }
     }
 
@@ -415,16 +429,6 @@ public class BoardManager
         {
             int numTilesInBag = tileBag.Count;
             Tile drawnTile = tileBag[0];
-           /* int tileIndexToDraw;
-            if (Services.BoardData.randomTiles)
-            {
-                tileIndexToDraw = Random.Range(0, numTilesInBag);
-            }
-            else
-            {
-                tileIndexToDraw = 0;
-            }*/
-            //drawnTile = tileBag[0];
             tileBag.Remove(drawnTile);
             SetPreviews();
             return drawnTile;
@@ -1403,6 +1407,7 @@ public class BoardManager
         public override void Update(){
             if (Context.boardFinishedEntering)
             {
+                Context.CheckScoreAction();
                 TransitionTo<SpawnTile>();
                 return;
             }

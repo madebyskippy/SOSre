@@ -28,13 +28,14 @@ public class HandleTextFile : MonoBehaviour {
     [MenuItem("Tools/Read file")]
     public static string ReadString(string name)
     {
-        string path = "Assets/Resources/"+name+".txt";
+        string path = "Assets/Resources/Data/"+name+".txt";
 
         //Read the text from directly from the test.txt file
         StreamReader reader = new StreamReader(path);
         //Debug.Log(reader.ReadToEnd());
+        string read = reader.ReadToEnd();
         reader.Close();
 
-        return reader.ReadToEnd();
+        return read;
     }
 }
