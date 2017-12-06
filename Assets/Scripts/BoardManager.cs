@@ -38,9 +38,9 @@ public class BoardManager
 
     public GameObject pivotPoint;
 
-    private Vector3[] spawnLocs = { new Vector3(-4.14f, 0, 0.27f),
+  /*  private Vector3[] spawnLocs = { new Vector3(-4.14f, 0, 0.27f),
                                  //   new Vector3()
-                                    };
+                                    };*/
 
     public Tile spawnedTile;
     public Tile selectedTile;
@@ -75,11 +75,11 @@ public class BoardManager
     private Sequence tileFloatSequence;
     private Sequence boardCollapseSequence;
 
-    private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
-    private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
+   // private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
+   // private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
 
     public WaitTask gameoverWait;
-    private bool gameIsOver;
+//    private bool gameIsOver;
 
     private Image[] previewTiles;
 
@@ -104,7 +104,7 @@ public class BoardManager
 
     public void InitializeBoard()
     {
-        gameIsOver = false;
+       // gameIsOver = false;
         gameoverWait = new WaitTask(1f);
         //DOTween.Init(true, false, LogBehaviour.Verbose).SetCapacity(200, 10);
         DOTween.Clear(true);
@@ -174,7 +174,7 @@ public class BoardManager
     }
 
     private void ParseLevel(){
-        string read = HandleTextFile.ReadString("test");
+        string read = HandleTextFile.ReadString(Services.BoardData.levelName);
         string[] strs = read.Split('-');
         tileBag = new List<Tile>();
 
@@ -183,8 +183,8 @@ public class BoardManager
             CreateTile(int.Parse(strs[i]), true); //adds to tilebag
         }
 
-
         for (int j = 8; j < strs.Length; ++j){
+
             if(strs[j].Equals(".")){
                 break;
             }
@@ -284,7 +284,6 @@ public class BoardManager
 
     public void AnimateEnterBoard()
     {
-        Vector3[,] targetLocations = new Vector3[numCols, numRows];
         Sequence boardSequence = DOTween.Sequence();
         boardSequence.Pause();
         for (int i = 0; i < numCols; ++i)
@@ -303,7 +302,7 @@ public class BoardManager
         //enter tiles, only applicable to random tiles
         /*if (Services.BoardData.randomTiles)
         {*/
-            Sequence tileSequence = DOTween.Sequence();
+          //  Sequence tileSequence = DOTween.Sequence();
             for (int t = 0; t < initialTilesOnBoard.Count; ++t)
             {
                 Vector3 targetLocation = initialTilesOnBoard[t].transform.position;
@@ -878,7 +877,7 @@ public class BoardManager
 
         int maxStackHeight = 1;
 
-        bool startsGoingOverEdge = false;
+//        bool startsGoingOverEdge = false;
 
         //gets the locations off the lowest/highest boardspace in the row/column
         Vector3[] eitherEdgeTargetLocs = BeyondEitherEdges(boardSpaceX, boardSpaceZ, xDirection, zDirection);
@@ -901,7 +900,7 @@ public class BoardManager
             toBeSpilled.tileStack.Remove(tileToMove);
 
 			if (isGoingOverEdge){
-				startsGoingOverEdge = true;
+			//	startsGoingOverEdge = true;
 			}
 
             // ANIMATE SPILL
@@ -914,10 +913,11 @@ public class BoardManager
             if(maxStackHeight > 1){
                 jumpHeight *= 0.65f;
             }
-            Vector3 targetLocation = new Vector3(spaceToSpillOnto.transform.position.x,
+            /*Vector3 targetLocation = new Vector3(spaceToSpillOnto.transform.position.x,
                         spaceToSpillOnto.provisionalTileCount * 0.2f + 0.1f,
                                                  spaceToSpillOnto.transform.position.z);
-            //     if (startsGoingOverEdge)
+                                                 */
+//     if (startsGoingOverEdge)
             //     {
             /* tileSpillSequence.Append(
                  tileToMoveTransform.DOJump(eitherEdgeTargetLocs[0],

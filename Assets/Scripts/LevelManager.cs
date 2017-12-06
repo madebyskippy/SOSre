@@ -23,7 +23,7 @@ public class LevelManager {
     public int numRows, numCols;
 
     private GameObject currentSpawnedTile;
-    private int previousTileColor;
+//    private int previousTileColor;
     public Tile selectedTile;
 
     public Tile selectedStackTile;
@@ -183,7 +183,6 @@ public class LevelManager {
            // Services.LevelEditor.currentTileColor = -1;
             if (currentSpawnedTile != null)
             {
-            //Debug.Log("what");
                 Object.Destroy(currentSpawnedTile.gameObject);
             }
             currentSpawnedTile = Object.Instantiate(Services.Prefabs.Tile, offscreen, Quaternion.identity) as GameObject;
@@ -232,11 +231,11 @@ public class LevelManager {
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.LevelEditor.spawnedTileLayer))
             {
-                
                 selectedTile = currentSpawnedTile.GetComponent<Tile>();
 
             }
         }
+
 
     }
 
@@ -292,9 +291,6 @@ public class LevelManager {
     public void SelectStackTileAction(){
         if(trashSelectedTile){
             trashSelectedTile = false;
-            //Services.
-
-            //selectedStackTile
 
             BoardSpace space = CalculateSpaceFromLocation(selectedStackTile.transform.position);
             int index = space.tileStack.IndexOf(selectedStackTile);
@@ -310,6 +306,21 @@ public class LevelManager {
                 space.gameObject.layer = LayerMask.NameToLayer("TopTiles");
             }
             selectedStackTile = null;
+        } else{
+            Ray ray = Services.GameManager.currentCamera.ScreenPointToRay(Input.mousePosition);
+            if (Input.GetMouseButtonDown(0))
+            {
+                RaycastHit hit = new RaycastHit();
+                if (Physics.Raycast(ray, out hit, Mathf.Infinity, Services.LevelEditor.tileLayer))
+                {
+                    if (hit.collider.gameObject.GetComponent<Tile>() == selectedStackTile)
+                    {
+                        selectedStackTile.gameObject.GetComponent<Renderer>().material.shader = Services.Materials.HighlightShaders[0];
+                        //selectedStackTile = .GetComponent<Tile>();
+                        selectedStackTile = null;
+                    }
+                }
+            }
         }
     }
 
@@ -325,7 +336,7 @@ public class LevelManager {
         {
             if (Services.LevelEditor.currentTileColor >= 0)
             {
-                Context.previousTileColor = Services.LevelEditor.currentTileColor;
+               // Context.previousTileColor = Services.LevelEditor.currentTileColor;
                 TransitionTo<SpawnTile>();
                 return;
             } else if(Context.selectedStackTile != null){
@@ -343,7 +354,6 @@ public class LevelManager {
 
     private class SpawnTile : Phase{
         public override void OnEnter(){
-            Debug.Log("spawn");
 
         }
         public override void Update(){
@@ -359,13 +369,12 @@ public class LevelManager {
         {
 
             Services.LevelEditor.currentTileColor = -1;
-            Debug.Log("SelectTile");
         }
         public override void Update()
         {
             if (Services.LevelEditor.currentTileColor >= 0)
             {
-                Context.previousTileColor = Services.LevelEditor.currentTileColor;
+               // Context.previousTileColor = Services.LevelEditor.currentTileColor;
                 TransitionTo<SpawnTile>();
                 return;
             }
@@ -391,13 +400,12 @@ public class LevelManager {
     {
         public override void OnEnter()
         {
-            Debug.Log("place");
         }
         public override void Update()
         {
             if (Services.LevelEditor.currentTileColor >= 0)
             {
-                Context.previousTileColor = Services.LevelEditor.currentTileColor;
+                //Context.previousTileColor = Services.LevelEditor.currentTileColor;
                 TransitionTo<SpawnTile>();
                 return;
             }
@@ -419,7 +427,6 @@ public class LevelManager {
 
     private class SelectStackTile : Phase{
         public override void OnEnter(){
-            Debug.Log("select stack tile");
         }
         public override void Update(){
             if (Context.selectedStackTile == null)

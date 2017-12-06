@@ -15,12 +15,24 @@ public class TitleScreen : Scene<TransitionData> {
 	void Update()
 	{
 
-	}
+    }
+    void InitializeServices()
+    {
+        Services.TitleScreen = this;
+    }
+
+    internal override void OnEnter(TransitionData data)
+    {
+        InitializeServices();
+        Services.GameManager.currentCamera = GetComponentInChildren<Camera>();
+
+    }
+
 
 	public void StartLevelGame()
 	{
         Services.BoardData.randomTiles = false;
-		Services.SceneStackManager.Swap<Main>();
+		Services.SceneStackManager.Swap<LevelSelect>();
 	}
 
     public void StartLevelEditor(){

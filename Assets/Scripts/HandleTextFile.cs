@@ -6,17 +6,6 @@ using System.IO;
 
 public class HandleTextFile : MonoBehaviour {
 
-    [MenuItem("Tools/Write file")]
-
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
 
     public static void WriteString(string name, string str){
         string path = "Assets/Resources/Data/" + name + ".txt";
@@ -25,7 +14,6 @@ public class HandleTextFile : MonoBehaviour {
         writer.Close();
     }
 
-    [MenuItem("Tools/Read file")]
     public static string ReadString(string name)
     {
         string path = "Assets/Resources/Data/"+name+".txt";

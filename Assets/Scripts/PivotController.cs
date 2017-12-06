@@ -5,12 +5,12 @@ using DG.Tweening;
 
 public class PivotController : MonoBehaviour {
 
-    private Vector3 currentRotation;
+//    private Vector3 currentRotation;
 
     private bool spinning;
 	// Use this for initialization
 	void Start () {
-        currentRotation = Vector3.zero;
+        //currentRotation = Vector3.zero;
         spinning = false;
 	}
 	

@@ -11,6 +11,7 @@ public class BoardData {
     public bool randomTiles;
 
     public bool hasPreviews;
+    public string levelName;
 
     public void InitializeBoardData(){
         numRows = 6;
@@ -21,5 +22,7 @@ public class BoardData {
         initialNumberOfEachTileColor = new int[4] { 20, 20, 20, 20 };
 
         randomTiles = false;
+        levelName = "test";
+
     }
 }
