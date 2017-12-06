@@ -29,20 +29,107 @@ public class LevelManager {
     public Tile selectedStackTile;
     public bool trashSelectedTile;
 
+    public int boardSize;
+    public int numMoves;
+    public int[] centerGoals;
+
     public void Update()
     {
         fsm.Update();
     }
 
-    public void CleanBoard(){
-        for (int i = 0; i < numCols; ++i){
-            for (int j = 0; j < numRows; j++){
-                for (int n = 0; n < board[i, j].tileStack.Count; ++n){
-                    Object.Destroy(board[i, j].tileStack[n].gameObject);
+    public void ChangeBoardSizeInLevel(){
+        boardSize = Services.LevelEditor.boardSize;
+        if(boardSize == 0){
+            int prev = numCols;
+            numCols = 6;
+            numRows = numCols;
+            ChangeBoardSizeInLevelHelper(numCols, prev);
+        } else if(boardSize == 1){
+            int prev = numCols;
+            numCols = 4;
+            numRows = numCols;
+            ChangeBoardSizeInLevelHelper(numCols, prev);
+        }
+
+    }
+
+    private void ChangeBoardSizeInLevelHelper(int size, int prevSize){
+        BoardSpace[,] newBoard = new BoardSpace[size, size];
+        if(size == 6){
+            /*for (int i = 0; i < prevSize; i++){
+                for (int j = 0; j < prevSize; j++){
+                    board[i,j].gameObject.layer = LayerMask.NameToLayer("Default");
                 }
-                Object.Destroy(board[i, j].gameObject);
+            }*/
+            for (int c = 0; c < size; ++c){
+                for (int r = 0; r < size; ++r){
+                    if (IsEdge(c, size) || IsEdge(r, size))
+                    {
+  
+                        int spaceColor;
+                        if ((c + r) % 2 == 0)
+                        {
+                            spaceColor = 1;
+                        }
+                        else
+                        {
+                            spaceColor = 2;
+                        }
+                        CreateBoardSpace(c, r, spaceColor, newBoard);
+
+
+                    }
+                    else
+                    {
+                        newBoard[c, r] = board[c-1, r-1];
+
+                    }
+                }
+            }
+        } else if(size == 4){
+            for (int c = 0; c < prevSize; ++c){
+                for (int r = 0; r < prevSize; ++r){
+                    if(IsEdge(c, prevSize) || IsEdge(r,prevSize)){
+                        for (int t = 0; t < board[c, r].tileStack.Count; ++t){
+                            Object.Destroy(board[c, r].tileStack[t].gameObject);
+                        }
+                        Object.Destroy(board[c, r].gameObject);
+                    } else{
+                        newBoard[c - 1, r - 1] = board[c, r];
+                    }
+                }
             }
         }
+        board = newBoard;
+    }
+
+    private bool IsEdge(int index, int sideLength)
+    {
+        bool edge = (index == 0) || (index == sideLength - 1);
+        return edge;
+    }
+
+
+    public void CleanBoard(){
+        if (board != null)
+        {
+            for (int i = 0; i < numCols; ++i)
+            {
+                for (int j = 0; j < numRows; j++)
+                {
+                    for (int n = 0; n < board[i, j].tileStack.Count; ++n)
+                    {
+                        Object.Destroy(board[i, j].tileStack[n].gameObject);
+                    }
+                    Object.Destroy(board[i, j].gameObject);
+                }
+            }
+        }
+        boardSize = 0; //6
+        numMoves = 0;
+        centerGoals = new int[4];
+
 
     }
 
@@ -63,7 +150,7 @@ public class LevelManager {
         fsm = new FSM<LevelManager>(this);
         fsm.TransitionTo<DefaultState>();
     }
-    private void CreateBoardSpace(int colNum, int rowNum, int color)
+    private void CreateBoardSpace(int colNum, int rowNum, int color, BoardSpace[,] givenBoard)
     {
         Vector3 location = new Vector3(colNum - numCols / 2 + 0.5f, 0, rowNum - numRows / 2 + 0.5f);
         GameObject boardSpace = Object.Instantiate(Services.Prefabs.BoardSpace, location, Quaternion.identity) as GameObject;
@@ -82,7 +169,7 @@ public class LevelManager {
             boardSpace.GetComponent<BoardSpace>().isCenterSpace = false;
         }
         boardSpace.layer = LayerMask.NameToLayer("TopTiles");
-        board[colNum, rowNum] = boardSpace.GetComponent<BoardSpace>();
+        givenBoard[colNum, rowNum] = boardSpace.GetComponent<BoardSpace>();
 
     }
 
@@ -90,8 +177,13 @@ public class LevelManager {
     {
         centerSpaces = new List<BoardSpace>();
 
-        numCols = Services.BoardData.numCols;
-        numRows = Services.BoardData.numRows;
+        /*numRows = Services.BoardData.numRows;*/
+        if(boardSize == 0){
+            numCols = 6;
+        } else if(boardSize == 1){
+            numCols = 4;
+        }
+        numRows = numCols;
         board = new BoardSpace[numCols, numRows];
         for (int i = 0; i < numCols; i++)
         {
@@ -110,7 +202,7 @@ public class LevelManager {
                 {
                     spaceColor = 2;
                 }
-                CreateBoardSpace(i, j, spaceColor);
+                CreateBoardSpace(i, j, spaceColor, board);
             }
         }
 
@@ -138,12 +230,25 @@ public class LevelManager {
         string[] strs = read.Split('-');
         //tileBag = new List<Tile>();
 
-        for (int i = 0; i < 8; ++i)
-        {
-            Services.LevelEditor.dropdowns[i].value = int.Parse(strs[i]);
+        boardSize = int.Parse(strs[0]); //+ 1
+        Services.LevelEditor.boardsizeDropdown.value = boardSize;
+        numMoves = int.Parse(strs[1]); //+ 1
+        Services.LevelEditor.movesDropdown.value = numMoves;
+        for (int h = 0; h < centerGoals.Length; ++h)
+        { //+ 4
+            centerGoals[h] = int.Parse(strs[h + 2]);
+            Services.LevelEditor.goalDropdowns[h].value = centerGoals[h];
         }
 
-        for (int j = 8; j < strs.Length; ++j)
+        int startingIndex = 6;
+
+
+        for (int i = startingIndex; i < startingIndex+8; ++i)
+        {
+            Services.LevelEditor.previewDropdowns[i-startingIndex].value = int.Parse(strs[i]);
+        }
+
+        for (int j = startingIndex + 8; j < strs.Length; ++j)
         {
             if (strs[j].Equals("."))
             {
@@ -161,7 +266,9 @@ public class LevelManager {
                     int n = int.Parse(strs[k]);
                     //make tile, don't add to tilebag
                     Tile tileToPlace = CreateTile(n);
+                    tileToPlace.gameObject.layer = LayerMask.NameToLayer("TileLayer");
                     board[c, r].AddTile(tileToPlace, true);
+                    board[c,r].gameObject.layer = LayerMask.NameToLayer("Default");
                     k++;
                 }
             }

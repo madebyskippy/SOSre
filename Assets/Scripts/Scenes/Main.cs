@@ -20,11 +20,14 @@ public class Main : Scene<TransitionData> {
     public GameObject GameOverScoreText;
     public GameObject PauseScreen;
 
+    public Text Objective;
+
     public GameObject HighlightCenter;
 
     public SpriteRenderer gradient;
 
     public AudioController audioController;
+
 
 	// Use this for initialization
 	void Start () {

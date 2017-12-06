@@ -68,12 +68,17 @@ public class BoardManager
     public bool tileInPosition = false;
     public int sideAboutToCollapse;
 
+    public int numMoves;
+    public int boardSize;
+    public int[] centerGoals;
+
     public BoardSpace highlightedSpace;
 
     private List<Tile> initialTilesOnBoard;
 
     private Sequence tileFloatSequence;
     private Sequence boardCollapseSequence;
+
 
    // private Vector3 oneLocation = new Vector3(-2.5f, 0.5f, -2.5f);
    // private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
@@ -122,23 +127,26 @@ public class BoardManager
         mainBoard = GameObject.FindWithTag("Board");
         Services.Main.ConfirmUndoUI.SetActive(false);
 
-        CreateBoard();
 
         pivotPoint = GameObject.FindGameObjectWithTag("PivotPoint");
 
-        currentNumRows = numRows;
-        currentNumCols = numCols;
-
-        currentLowestColIndex = 0;
-        currentLowestRowIndex = 0;
-        currentHighestRowIndex = numRows - 1;
-        currentHighestColIndex = numCols - 1;
-
         rotationIndex = 0;
         initialTilesOnBoard = new List<Tile>();
+        currentLowestColIndex = 0;
+        currentLowestRowIndex = 0;
+
+        centerGoals = new int[4];
+
 
         if (Services.BoardData.randomTiles)
         {
+            numRows = 6;
+            numCols = 6;
+            CreateBoard();
+            currentNumRows = numRows;
+            currentNumCols = numCols;
+            currentHighestRowIndex = numRows - 1;
+            currentHighestColIndex = numCols - 1;
 
             CreateTileBag();
             for (int b = 0; b < 2; b++)
@@ -163,8 +171,12 @@ public class BoardManager
         }
         else
         {
-
+            
             ParseLevel();
+            currentNumRows = numRows;
+            currentNumCols = numCols;
+            currentHighestRowIndex = numRows - 1;
+            currentHighestColIndex = numCols - 1;
         }
 
 
@@ -178,12 +190,26 @@ public class BoardManager
         string[] strs = read.Split('-');
         tileBag = new List<Tile>();
 
-        /* might need to put this at the end */
-        for (int i = 0; i < 8; ++i){
+        boardSize = int.Parse(strs[0]); //+ 1
+        numMoves = int.Parse(strs[1]); //+ 1
+        for (int h = 0; h < centerGoals.Length; ++h){ //+ 4
+            centerGoals[h] = int.Parse(strs[h + 2]);
+        }
+
+        if(boardSize == 0){
+            numRows = 6;
+        } else if(boardSize == 1){
+            numRows = 4;
+        }
+        numCols = numRows;
+        CreateBoard();
+
+        int startingIndex = 6;
+        for (int i = startingIndex; i < startingIndex+8; ++i){
             CreateTile(int.Parse(strs[i]), true); //adds to tilebag
         }
 
-        for (int j = 8; j < strs.Length; ++j){
+        for (int j = startingIndex + 8; j < strs.Length; ++j){
 
             if(strs[j].Equals(".")){
                 break;
@@ -253,9 +279,9 @@ public class BoardManager
     private void CreateBoard()
     {
         centerSpaces = new List<BoardSpace>();
-
+        /*
         numCols = Services.BoardData.numCols;
-        numRows = Services.BoardData.numRows;
+        numRows = Services.BoardData.numRows;*/
         board = new BoardSpace[numCols, numRows];
         for (int i = 0; i < numCols; i++)
         {
