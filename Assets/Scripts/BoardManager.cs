@@ -72,6 +72,9 @@ public class BoardManager
     public int boardSize;
     public int[] centerGoals;
 
+    public int move;
+    public int[] goalCounts;
+
     public BoardSpace highlightedSpace;
 
     private List<Tile> initialTilesOnBoard;
@@ -84,7 +87,8 @@ public class BoardManager
    // private Vector3 location = new Vector3(-2.5f, 0.5f, -2.5f);
 
     public WaitTask gameoverWait;
-//    private bool gameIsOver;
+    //    private bool gameIsOver;
+    public bool goalMet;
 
     private Image[] previewTiles;
 
@@ -95,6 +99,17 @@ public class BoardManager
         new Color(148f/255f,59f/255f,92f/255f), //camred
         new Color(251f/255f,194f/255f,123f/255f) //camyellow
     };
+
+    public enum WinCondition
+    {
+        OneR, OneG, OneB, OneY,
+        TwoR, TwoG, TwoB, TwoY,
+        ThreeR, ThreeG, ThreeB, ThreeY,
+        FourR, FourG, FourB, FourY,
+        Unique
+    }
+
+    public WinCondition winCondition;
 
     public enum Brightness {Bright,Dark,Normal}
 
@@ -171,12 +186,15 @@ public class BoardManager
         }
         else
         {
-            
+
+            goalCounts = new int[5];
             ParseLevel();
             currentNumRows = numRows;
             currentNumCols = numCols;
             currentHighestRowIndex = numRows - 1;
             currentHighestColIndex = numCols - 1;
+            move = 0;
+            goalMet = false;
         }
 
 
@@ -228,6 +246,52 @@ public class BoardManager
                     initialTilesOnBoard.Add(tileToPlace);
                     k++;
                 }
+            }
+        }
+
+        // Land __ tiles in the center in __ moves
+
+        string moveStr = "";
+        if (numMoves > 0)
+        {
+            moveStr = " in "+numMoves + " moves.";
+        } else{
+            moveStr = ".";
+        }
+
+        // centerGoals
+        /* 0: w
+         * 1: r
+         * 2: g
+         * 3: b
+         * 4: y
+         * 
+         * 
+         * */
+
+        for (int i = 0; i < centerGoals.Length; ++i)
+        {
+            for (int j = 0; j < goalCounts.Length; ++j)
+            {
+                if (centerGoals[i] == j)
+                {
+                    goalCounts[j]++;
+                }
+            }
+        }
+
+        /* here, assign winCondition */
+        if(centerGoals[1] == 1 && centerGoals[2] == 1 && centerGoals[3] == 1 && centerGoals[4] == 1){
+            winCondition = WinCondition.Unique;
+        } else if(centerGoals[0] == 3){
+            if(centerGoals[1] == 1){
+                winCondition = WinCondition.OneR;
+            } else if(centerGoals[2] == 1){
+                winCondition = WinCondition.OneG;
+            } else if(centerGoals[3] == 1){
+                winCondition = WinCondition.OneB;
+            } else if(centerGoals[4] == 1){
+                winCondition = WinCondition.OneY;
             }
         }
     }
@@ -1216,12 +1280,87 @@ public class BoardManager
                    // Debug.Log("enter not scoring");
                     finishedCheckingScore = true;
                     centerSpaceChanged = false;
+                    EvaluateGoal(); // now have to add boardfall option to level editor? maybe?
+                    // board falling is fine, so maybe redesign the first level so 
+                    // only have to land red in the first turn (give red first, only have one tile on board)
+
                 }
             }
 
         } else {
           //  Debug.Log("enter center space not changed");
             finishedCheckingScore = true;
+
+
+        }
+    }
+
+    private void EvaluateGoal(){
+        //EVALUATE GOALS HERE
+        int cred = 0;
+        int cgreen = 0;
+        int cblue = 0;
+        int cyellow = 0;
+        foreach (BoardSpace bs in centerSpaces)
+        {
+            int color = bs.centerColor;
+            switch (color)
+            {
+                case 0:
+                    cred++;
+                    break;
+                case 1:
+                    cgreen++;
+                    break;
+                case 2:
+                    cblue++;
+                    break;
+                case 3:
+                    cyellow++;
+                    break;
+            }
+
+        }
+        /* in the parse level function, figure out what goal you're supposed to meet. (using enum)
+            then, switch case on the goal enum: unique? unique red? etc.
+            e.g. in the case of 4 unique, the case: Unique should look like
+            if cred == 1 && cgreen == 1 && cblue == 1 && cyellow == 1 --> goalMet = true
+            if goalMet is true, then GameOver
+
+        */
+        switch (winCondition)
+        {
+            case WinCondition.Unique:
+                if (cred == 1 && cgreen == 1 && cblue == 1 && cyellow == 1)
+                {
+                    goalMet = true;
+                }
+                break;
+            case WinCondition.OneR:
+                if (cred == 1)
+                {
+                    goalMet = true;
+                }
+                break;
+            case WinCondition.OneG:
+                if (cgreen == 1)
+                {
+                    goalMet = true;
+                }
+                break;
+            case WinCondition.OneB:
+                if (cblue == 1)
+                {
+                    goalMet = true;
+                }
+                break;
+            case WinCondition.OneY:
+                if (cyellow == 1)
+                {
+                    goalMet = true;
+                }
+                break;
+
         }
     }
 
@@ -1364,12 +1503,19 @@ public class BoardManager
 
 	public bool GameOverCheck()
 	{
+        // do check for goals, return true if goals met
+        if(goalMet){
+            return true;
+        }
+
         if (numSidesCollapsed == (4 * ((numCols * 2) / 4 - 1)))
 		{
             return true;
 		}
         return false;
 	}
+
+
 
     public void PreGameOverAction(){
         Services.TaskManager.AddTask(gameoverWait);
@@ -1413,6 +1559,15 @@ public class BoardManager
             Services.Main.GameOverText.SetActive(true);
 
         }
+        string reaction = "";
+        if(move > numMoves){
+            reaction = "Solved in " + move + " moves!";
+        } else{
+            reaction = "Solved in " + move + " moves...";
+        }
+        // adding moves as evaluation
+        Services.Main.GameOverText.GetComponent<Text>().text = reaction;
+
         Services.Main.PauseScreen.transform.GetChild(0).gameObject.SetActive(false);
         Services.Main.PauseScreen.transform.GetChild(1).gameObject.SetActive(true);
 
@@ -1558,6 +1713,7 @@ public class BoardManager
                     Context.finishedCheckingScore = false;
                     TransitionTo<BoardFall>();
                     return;
+
                 }
             } 
 		}
@@ -1585,6 +1741,7 @@ public class BoardManager
 				Context.CheckScoreAction();
                 if (Context.finishedCheckingScore)
                 {
+                    Context.move++; // incrementing move when cycle is done
                     Context.finishedCheckingScore = false;
                     if (Context.GameOverCheck())
                     {
