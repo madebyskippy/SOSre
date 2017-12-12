@@ -190,7 +190,8 @@ public class BoardManager
         {
             Services.Main.objective.gameObject.SetActive(true);
             Services.Main.levelEndButtons.gameObject.SetActive(true);
-            if(Services.BoardData.levelNum == Services.BoardData.maxLevels){
+            if(Services.BoardData.levelNum == Services.BoardData.maxLevels ||
+              Services.BoardData.levelNum == -1){
                 Services.Main.levelEndButtons.transform.GetChild(0).gameObject.SetActive(false);
             } else{
                 Services.Main.levelEndButtons.transform.GetChild(0).gameObject.SetActive(true);

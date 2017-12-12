@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
+//using UnityEditor;
 using System.IO;
 
 public class HandleTextFile : MonoBehaviour {
@@ -16,14 +16,16 @@ public class HandleTextFile : MonoBehaviour {
 
     public static string ReadString(string name)
     {
-        string path = "Assets/Resources/Data/"+name+".txt";
-
+        /*string path = "Assets/Resources/Data/"+name+".txt";
         //Read the text from directly from the test.txt file
         StreamReader reader = new StreamReader(path);
         //Debug.Log(reader.ReadToEnd());
         string read = reader.ReadToEnd();
         reader.Close();
-
+*/
+        string path = "Data/" + name;
+        TextAsset data = Resources.Load(path) as TextAsset;
+        string read = data.text;
         return read;
     }
 }
