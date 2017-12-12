@@ -155,6 +155,8 @@ public class BoardManager
 
         if (Services.BoardData.randomTiles)
         {
+            Services.Main.objective.gameObject.SetActive(false);
+            Services.Main.levelEndButtons.gameObject.SetActive(false);
             numRows = 6;
             numCols = 6;
             CreateBoard();
@@ -182,11 +184,17 @@ public class BoardManager
                 }
             }
 
-            SetPreviews();
+          //  SetPreviews();
         }
         else
         {
-
+            Services.Main.objective.gameObject.SetActive(true);
+            Services.Main.levelEndButtons.gameObject.SetActive(true);
+            if(Services.BoardData.levelNum == Services.BoardData.maxLevels){
+                Services.Main.levelEndButtons.transform.GetChild(0).gameObject.SetActive(false);
+            } else{
+                Services.Main.levelEndButtons.transform.GetChild(0).gameObject.SetActive(true);
+            }
             goalCounts = new int[5];
             ParseLevel();
             currentNumRows = numRows;
@@ -195,8 +203,30 @@ public class BoardManager
             currentHighestColIndex = numCols - 1;
             move = 0;
             goalMet = false;
+            string obj = "";
+            switch(winCondition){
+                case WinCondition.Unique:
+                    obj = "Land four unique tiles in the center spaces";
+                    break;
+                case WinCondition.OneR:
+                    obj = "Land a red tile in the center space";
+                    break;
+                case WinCondition.OneB:
+                    obj = "Land a blue tile in the center space";
+                    break;
+                case WinCondition.OneG:
+                    obj = "Land a green tile in the center space";
+                    break;
+            }
+            if (numMoves < 8)
+            {
+                obj += " in " + numMoves + " move(s).";
+            } else{
+                obj += ".";
+            }
+            Services.Main.objective.text = obj;
         }
-
+        SetPreviews();
 
         fsm = new FSM<BoardManager>(this);
         fsm.TransitionTo<EnterBoard>();
@@ -280,17 +310,19 @@ public class BoardManager
             }
         }
 
+
         /* here, assign winCondition */
-        if(centerGoals[1] == 1 && centerGoals[2] == 1 && centerGoals[3] == 1 && centerGoals[4] == 1){
+        if(goalCounts[1] == 1 && goalCounts[2] == 1 && goalCounts[3] == 1 && goalCounts[4] == 1){
+
             winCondition = WinCondition.Unique;
-        } else if(centerGoals[0] == 3){
-            if(centerGoals[1] == 1){
+        } else if(goalCounts[0] == 3){
+            if(goalCounts[1] == 1){
                 winCondition = WinCondition.OneR;
-            } else if(centerGoals[2] == 1){
+            } else if(goalCounts[2] == 1){
                 winCondition = WinCondition.OneG;
-            } else if(centerGoals[3] == 1){
+            } else if(goalCounts[3] == 1){
                 winCondition = WinCondition.OneB;
-            } else if(centerGoals[4] == 1){
+            } else if(goalCounts[4] == 1){
                 winCondition = WinCondition.OneY;
             }
         }
@@ -1280,16 +1312,20 @@ public class BoardManager
                    // Debug.Log("enter not scoring");
                     finishedCheckingScore = true;
                     centerSpaceChanged = false;
-                    EvaluateGoal(); // now have to add boardfall option to level editor? maybe?
-                    // board falling is fine, so maybe redesign the first level so 
-                    // only have to land red in the first turn (give red first, only have one tile on board)
-
+                   /* if (!Services.BoardData.randomTiles)
+                    {
+                        EvaluateGoal();
+                    }*/
                 }
             }
 
         } else {
           //  Debug.Log("enter center space not changed");
             finishedCheckingScore = true;
+            if (!Services.BoardData.randomTiles)
+            {
+                EvaluateGoal();
+            }
 
 
         }
@@ -1321,6 +1357,7 @@ public class BoardManager
             }
 
         }
+        Debug.Log(cred + ", " + cgreen + ", " + cblue + ", " + cyellow);
         /* in the parse level function, figure out what goal you're supposed to meet. (using enum)
             then, switch case on the goal enum: unique? unique red? etc.
             e.g. in the case of 4 unique, the case: Unique should look like
@@ -1527,47 +1564,68 @@ public class BoardManager
 
         gameoverWait.finished = false;
         Services.Main.audioController.bgm.DOFade(0f, 0.5f).OnComplete(() => Services.Main.audioController.bgm.Stop());
-        if (score > 0)
+        if (Services.BoardData.randomTiles)
         {
-            Services.Main.audioController.gameoverwin.Play();
-            Services.Main.GameOverScoreText.SetActive(true);
-
-            for (int i = 0; i < score; ++i)
+            if (score > 0)
             {
+                Services.Main.audioController.gameoverwin.Play();
+                Services.Main.GameOverScoreText.SetActive(true);
 
-                GameObject finalscoreimg = Object.Instantiate(Services.Prefabs.FinalScoreImg, Services.Main.GameOverScoreText.transform, false) as GameObject;
-                finalscoreimg.transform.localScale = new Vector3(0, 0, 0);
-                float x;
-                if (score > 1)
+                for (int i = 0; i < score; ++i)
                 {
-                    x = -40f * (score - 1);
-                    x += 80f * i;
+
+                    GameObject finalscoreimg = Object.Instantiate(Services.Prefabs.FinalScoreImg, Services.Main.GameOverScoreText.transform, false) as GameObject;
+                    finalscoreimg.transform.localScale = new Vector3(0, 0, 0);
+                    float x;
+                    if (score > 1)
+                    {
+                        x = -40f * (score - 1);
+                        x += 80f * i;
+                    }
+                    else
+                    {
+                        x = 0;
+                    }
+
+                    finalscoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, -100f);
+                    finalscoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
+                }
+
+            } else{
+                Services.Main.audioController.gameoverlose.Play();
+                Services.Main.GameOverText.SetActive(true);
+            }
+        } else
+        {
+            Services.Main.GameOverText.SetActive(true);
+            string reaction = "";
+            if (goalMet)
+            {
+                if (move > numMoves)
+                {
+                    reaction = "Solved in " + move + " move(s)...";
+                    Services.Main.audioController.gameoverlose.Play();
                 }
                 else
                 {
-                    x = 0;
+                    reaction = "Solved in " + move + " move(s)!";
+
+                    Services.Main.audioController.gameoverwin.Play();
                 }
+                Services.Main.GameOverText.GetComponent<Text>().fontSize = 40;
 
-                finalscoreimg.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, -100f);
-                finalscoreimg.transform.DOScale(1f, 1f).SetEase(Ease.InOutElastic);
             }
+            else
+            {
 
-        }
-        else
-        {
-            Services.Main.audioController.gameoverlose.Play();
-            Services.Main.GameOverText.SetActive(true);
+                Services.Main.audioController.gameoverlose.Play();
+                reaction = "GAME OVER";
+                Services.Main.GameOverText.GetComponent<Text>().fontSize = 69;
+            }
+            // adding moves as evaluation
 
+            Services.Main.GameOverText.GetComponent<Text>().text = reaction;
         }
-        string reaction = "";
-        if(move > numMoves){
-            reaction = "Solved in " + move + " moves!";
-        } else{
-            reaction = "Solved in " + move + " moves...";
-        }
-        // adding moves as evaluation
-        Services.Main.GameOverText.GetComponent<Text>().text = reaction;
-
         Services.Main.PauseScreen.transform.GetChild(0).gameObject.SetActive(false);
         Services.Main.PauseScreen.transform.GetChild(1).gameObject.SetActive(true);
 

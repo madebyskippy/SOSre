@@ -29,6 +29,7 @@ public class LevelSelect : Scene<TransitionData>
 
     public void StartLevel(int n)
     {
+        Services.BoardData.levelNum = n;
         Services.BoardData.levelName = "level"+n;
         Services.SceneStackManager.Swap<Main>();
     }

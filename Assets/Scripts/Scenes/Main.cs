@@ -20,7 +20,7 @@ public class Main : Scene<TransitionData> {
     public GameObject GameOverScoreText;
     public GameObject PauseScreen;
 
-    public Text Objective;
+    public Text objective;
 
     public GameObject HighlightCenter;
 
@@ -28,6 +28,7 @@ public class Main : Scene<TransitionData> {
 
     public AudioController audioController;
 
+    public GameObject levelEndButtons;
 
 	// Use this for initialization
 	void Start () {
@@ -94,5 +95,13 @@ public class Main : Scene<TransitionData> {
         Services.Main.audioController.select.Play();
         Services.SceneStackManager.Swap<TitleScreen>();
 
+    }
+
+    public void NextLevel(){
+        //Services.BoardData.levelName = "level" + n;
+        Services.BoardData.levelNum++;
+        Services.BoardData.levelName = "level" + Services.BoardData.levelNum;
+        Services.SceneStackManager.PopScene();
+        Services.SceneStackManager.PushScene<Main>();
     }
 }
