@@ -209,13 +209,13 @@ public class BoardManager
                     obj = "Land four unique tiles in the center spaces";
                     break;
                 case WinCondition.OneR:
-                    obj = "Land a red tile in the center space";
+                    obj = "Land a red tile in the center spaces";
                     break;
                 case WinCondition.OneB:
-                    obj = "Land a blue tile in the center space";
+                    obj = "Land a blue tile in the center spaces";
                     break;
                 case WinCondition.OneG:
-                    obj = "Land a green tile in the center space";
+                    obj = "Land a green tile in the center spaces";
                     break;
             }
             if (numMoves < 8)

@@ -118,11 +118,15 @@ public class LevelManager {
             {
                 for (int j = 0; j < numRows; j++)
                 {
-                    for (int n = 0; n < board[i, j].tileStack.Count; ++n)
+                    if (board[i, j] != null)
                     {
-                        Object.Destroy(board[i, j].tileStack[n].gameObject);
+
+                        for (int n = 0; n < board[i, j].tileStack.Count; ++n)
+                        {
+                            Object.Destroy(board[i, j].tileStack[n].gameObject);
+                        }
+                        Object.Destroy(board[i, j].gameObject);
                     }
-                    Object.Destroy(board[i, j].gameObject);
                 }
             }
         }
