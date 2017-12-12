@@ -26,7 +26,7 @@ public class BoardData {
 
         randomTiles = false;
 
-        maxLevels = 3;
+        maxLevels = 5;
         levelNum = 1;
         levelName = "test";
 

@@ -218,7 +218,7 @@ public class BoardManager
                     obj = "Land a green tile in the center spaces";
                     break;
             }
-            if (numMoves < 8)
+            if (0 < numMoves && numMoves < 8)
             {
                 obj += " in " + numMoves + " move(s).";
             } else{
@@ -653,6 +653,17 @@ public class BoardManager
         }
         return false;
 
+    }
+
+    private bool AreTilesLeftOnBoard(){
+        for (int i = 0; i < numCols; ++i){
+            for (int j = 0; j < numRows; ++j){
+                if(board[i,j].tileStack.Count > 0){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     int[] CalculateAdjacentSpace(int x, int z, int xDirection, int zDirection)
@@ -1312,15 +1323,14 @@ public class BoardManager
                    // Debug.Log("enter not scoring");
                     finishedCheckingScore = true;
                     centerSpaceChanged = false;
-                   /* if (!Services.BoardData.randomTiles)
+                    if (!Services.BoardData.randomTiles)
                     {
                         EvaluateGoal();
-                    }*/
+                    }
                 }
             }
 
         } else {
-          //  Debug.Log("enter center space not changed");
             finishedCheckingScore = true;
             if (!Services.BoardData.randomTiles)
             {
@@ -1357,7 +1367,6 @@ public class BoardManager
             }
 
         }
-        Debug.Log(cred + ", " + cgreen + ", " + cblue + ", " + cyellow);
         /* in the parse level function, figure out what goal you're supposed to meet. (using enum)
             then, switch case on the goal enum: unique? unique red? etc.
             e.g. in the case of 4 unique, the case: Unique should look like
@@ -1540,6 +1549,9 @@ public class BoardManager
 
 	public bool GameOverCheck()
 	{
+        if(!AreTilesLeftOnBoard()){
+            return true;
+        }
         // do check for goals, return true if goals met
         if(goalMet){
             return true;
