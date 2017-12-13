@@ -155,6 +155,7 @@ public class BoardManager
 
         if (Services.BoardData.randomTiles)
         {
+            goalMet = false;
             Services.Main.objective.gameObject.SetActive(false);
             Services.Main.levelEndButtons.gameObject.SetActive(false);
             numRows = 6;
